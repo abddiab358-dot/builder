@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { PermissionUser } from '../types/domain'
 import { readJSONFile, saveJSONFile } from '../storage/fileSystem'
+import { getSavedDirectoryHandle } from '../storage/handleStore'
+import { hashPassword, verifyPassword } from '../utils/password'
 
 export interface AuthUser {
   id: string
@@ -99,20 +101,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithPassword = async (username: string, password: string): Promise<boolean> => {
     try {
-      // قراءة بيانات المستخدمين
-      const usersData = await readJSONFile('permissions.json')
+      // محاولة القراءة من الملفات أولاً
+      let usersData: any[] | null = null
+      
+      try {
+        const dir = await getSavedDirectoryHandle()
+        if (dir) {
+          const handle = await dir.getFileHandle('permissions.json').catch(() => null)
+          if (handle) {
+            const file = await handle.getFile()
+            const text = await file.text()
+            if (text.trim()) {
+              usersData = JSON.parse(text)
+            }
+          }
+        }
+      } catch (fileError) {
+        console.log('File system access failed, falling back to localStorage', fileError)
+      }
+      
+      // الرجوع إلى localStorage إذا فشل الملف
+      if (!usersData) {
+        const stored = localStorage.getItem('file:permissions.json')
+        usersData = stored ? JSON.parse(stored) : []
+      }
+
       const users = usersData || []
 
       // البحث عن المستخدم
       const user = users.find((u: any) => u.username === username)
       if (!user) {
+        console.log('User not found:', username)
         return false
       }
 
-      // التحقق من كلمة السر (في الإنتاج، استخدم bcrypt)
-      // هنا نستخدم تشفير بسيط
-      const isValidPassword = await verifyPassword(password, user.passwordHash)
+      // التحقق من كلمة السر
+      const isValidPassword = verifyPassword(password, user.passwordHash)
       if (!isValidPassword) {
+        console.log('Invalid password for user:', username)
         return false
       }
 
@@ -172,27 +198,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       {children}
     </AuthContext.Provider>
   )
-}
-
-// دالة تشفير وفك تشفير بسيطة (في الإنتاج استخدم bcrypt)
-function simpleHash(str: string): string {
-  let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i)
-    hash = (hash << 5) - hash + char
-    hash = hash & hash // Convert to 32bit integer
-  }
-  return Math.abs(hash).toString(16)
-}
-
-async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  // في الإنتاج، استخدم bcrypt.compare()
-  return simpleHash(password) === hash
-}
-
-export function createPasswordHash(password: string): string {
-  // في الإنتاج، استخدم bcrypt.hash()
-  return simpleHash(password)
 }
 
 export function useAuth() {

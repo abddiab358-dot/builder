@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePermissions } from '../hooks/usePermissions'
 import { BackButton } from '../components/ui/BackButton'
-import { createPasswordHash } from '../context/AuthContext'
+import { hashPassword } from '../utils/password'
 
 export function InitialSetupPage() {
   const navigate = useNavigate()
@@ -45,7 +45,7 @@ export function InitialSetupPage() {
 
     try {
       // إنشاء حساب admin مع كلمة سر
-      const passwordHash = createPasswordHash(adminPassword)
+      const passwordHash = hashPassword(adminPassword)
       
       // إضافة المستخدم مع بيانات كلمة السر
       await addUser(adminName, 'manager', adminUsername, passwordHash)
