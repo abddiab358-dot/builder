@@ -119,21 +119,6 @@ export function LoginPage() {
             )}
           </button>
 
-          {/* Demo Login Button */}
-          <button
-            onClick={() => {
-              setUsername('osamah')
-              setPassword('admin@123')
-              setTimeout(() => {
-                setUsername('osamah')
-                setPassword('admin@123')
-              }, 100)
-            }}
-            className="w-full mt-3 py-2 px-4 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-50 text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
-          >
-            📋 استخدام حساب تجريبي
-          </button>
-
           {/* Footer Info */}
           <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
             <p className="text-xs text-slate-600 dark:text-slate-400 text-center">

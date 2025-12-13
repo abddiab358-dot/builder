@@ -4,9 +4,9 @@ import { useCloudSync } from '../hooks/useCloudSync'
 import { BackupManager } from '../components/backup/BackupManager'
 import { BackButton } from '../components/ui/BackButton'
 import { usePermissions } from '../hooks/usePermissions'
-import { useAuth } from '../context/AuthContext'
 import { hashPassword } from '../utils/password'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { useAuth } from '../context/AuthContext'
 
 export function SettingsPage() {
   const { data: settings, update, isUpdating } = useSettings()
@@ -30,69 +30,31 @@ export function SettingsPage() {
   } = useCloudSync()
 
   const [newUserName, setNewUserName] = useState('')
+  const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
   const [newUserRole, setNewUserRole] = useState<'manager' | 'staff' | 'viewer'>('manager')
   const [userToDeleteId, setUserToDeleteId] = useState<string | null>(null)
-  
-  // Password change states
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [passwordError, setPasswordError] = useState('')
-  const [passwordSuccess, setPasswordSuccess] = useState(false)
 
   const handleAddUser = async () => {
     const name = newUserName.trim()
-    if (!name) return
-    await addUser(name, newUserRole)
+    const username = newUsername.trim()
+    const password = newPassword.trim()
+
+    if (!name || !username || !password) {
+      alert('الرجاء ملء جميع الحقول')
+      return
+    }
+
+    if (password.length < 6) {
+      alert('كلمة السر يجب أن تكون 6 أحرف على الأقل')
+      return
+    }
+
+    const passwordHash = hashPassword(password)
+    await addUser(name, newUserRole, username, passwordHash)
     setNewUserName('')
-  }
-
-  const handleChangePassword = async () => {
-    setPasswordError('')
-    setPasswordSuccess(false)
-
-    // التحقق من الحقول
-    if (!newPassword.trim()) {
-      setPasswordError('الرجاء إدخال كلمة السر الجديدة')
-      return
-    }
-
-    if (newPassword.length < 6) {
-      setPasswordError('كلمة السر يجب أن تكون 6 أحرف على الأقل')
-      return
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('كلمات السر غير متطابقة')
-      return
-    }
-
-    try {
-      // قراءة بيانات المستخدمين
-      const stored = localStorage.getItem('file:permissions.json')
-      const users = stored ? JSON.parse(stored) : []
-
-      // تحديث كلمة السر للمستخدم الحالي
-      const updatedUsers = users.map((u: any) => 
-        u.id === user?.id 
-          ? { ...u, passwordHash: hashPassword(newPassword) }
-          : u
-      )
-
-      // حفظ البيانات المحدثة
-      localStorage.setItem('file:permissions.json', JSON.stringify(updatedUsers))
-
-      setPasswordSuccess(true)
-      setNewPassword('')
-      setConfirmPassword('')
-      setShowPasswordForm(false)
-
-      // إخفاء رسالة النجاح بعد 3 ثوان
-      setTimeout(() => setPasswordSuccess(false), 3000)
-    } catch (error) {
-      setPasswordError('فشل تغيير كلمة السر')
-      console.error(error)
-    }
+    setNewUsername('')
+    setNewPassword('')
   }
 
   const getRoleLabel = (role: string) => {
@@ -178,110 +140,6 @@ export function SettingsPage() {
         </div>
       </div>
 
-      {/* Account Security Settings */}
-      <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-dark-md">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2 flex items-center gap-2">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
-          الأمان والحساب
-        </h2>
-        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-          أدر كلمة السر وبيانات حسابك الشخصية
-        </p>
-
-        {/* Current User Info */}
-        <div className="mb-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          <h3 className="font-semibold text-slate-900 dark:text-slate-50 mb-3 text-sm">معلومات حسابك الحالي</h3>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600 dark:text-slate-400">اسم المستخدم:</span>
-              <span className="text-sm font-medium text-slate-900 dark:text-slate-50">{user?.username || 'غير متاح'}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-slate-600 dark:text-slate-400">الدور:</span>
-              <span className={`text-xs px-2 py-1 rounded-full font-medium ${getRoleColor(user?.role || '')}`}>
-                {getRoleLabel(user?.role || '')}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Password Change Section */}
-        <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-          {!showPasswordForm ? (
-            <button
-              onClick={() => setShowPasswordForm(true)}
-              className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all"
-            >
-              تغيير كلمة السر
-            </button>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  كلمة السر الجديدة
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="أدخل كلمة السر الجديدة"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                  تأكيد كلمة السر
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="أعد إدخال كلمة السر"
-                />
-              </div>
-
-              {passwordError && (
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-sm text-red-700 dark:text-red-300">
-                  {passwordError}
-                </div>
-              )}
-
-              {passwordSuccess && (
-                <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  تم تغيير كلمة السر بنجاح
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleChangePassword}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 active:scale-95 transition-all"
-                >
-                  حفظ كلمة السر
-                </button>
-                <button
-                  onClick={() => {
-                    setShowPasswordForm(false)
-                    setNewPassword('')
-                    setConfirmPassword('')
-                    setPasswordError('')
-                  }}
-                  className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-50 hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 transition-all"
-                >
-                  إلغاء
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
       {/* Users and Permissions */}
       <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-dark-md">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50 mb-2 flex items-center gap-2">
@@ -297,9 +155,9 @@ export function SettingsPage() {
         {/* Add User Form */}
         <div className="mb-6 p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
           <h3 className="font-semibold text-slate-900 dark:text-slate-50 mb-4 text-sm">إضافة مستخدم جديد</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">اسم المستخدم</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">الاسم الكامل</label>
               <input
                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={newUserName}
@@ -319,16 +177,33 @@ export function SettingsPage() {
                 <option value="viewer">مشاهدة فقط</option>
               </select>
             </div>
-            <div className="flex items-end">
-              <button
-                type="button"
-                onClick={handleAddUser}
-                className="w-full px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all"
-              >
-                + إضافة مستخدم
-              </button>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">اسم الدخول (username)</label>
+              <input
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={newUsername}
+                onChange={(e) => setNewUsername(e.target.value)}
+                placeholder="مثال: ahmad_2024"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">كلمة السر</label>
+              <input
+                type="password"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="كلمة السر (6 أحرف على الأقل)"
+              />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={handleAddUser}
+            className="w-full mt-3 px-4 py-2 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 active:scale-95 transition-all"
+          >
+            + إضافة مستخدم
+          </button>
           {isSavingPermissions && (
             <div className="mt-3 flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400">
               <div className="loading"></div>
