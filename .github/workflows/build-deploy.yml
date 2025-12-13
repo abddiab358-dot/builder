@@ -74,4 +74,3 @@ jobs:
         git commit -m "Deploy: $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
         git push -f origin gh-pages
       continue-on-error: true
-      continue-on-error: true
