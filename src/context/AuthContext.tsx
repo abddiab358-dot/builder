@@ -101,6 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loginWithPassword = async (username: string, password: string): Promise<boolean> => {
     try {
+      console.log('Login attempt for user:', username)
+      
       // محاولة القراءة من الملفات أولاً
       let usersData: any[] | null = null
       
@@ -113,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const text = await file.text()
             if (text.trim()) {
               usersData = JSON.parse(text)
+              console.log('Loaded users from file system:', usersData)
             }
           }
         }
@@ -124,6 +127,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!usersData) {
         const stored = localStorage.getItem('file:permissions.json')
         usersData = stored ? JSON.parse(stored) : []
+        console.log('Loaded users from localStorage:', usersData)
       }
 
       const users = usersData || []
@@ -131,17 +135,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // البحث عن المستخدم
       const user = users.find((u: any) => u.username === username)
       if (!user) {
-        console.log('User not found:', username)
+        console.log('User not found:', username, 'Available users:', users.map((u: any) => u.username))
         return false
       }
 
+      console.log('User found:', user.name, 'Password hash:', user.passwordHash)
+      
       // التحقق من كلمة السر
+      const inputHash = hashPassword(password)
+      console.log('Input password hash:', inputHash, 'Stored hash:', user.passwordHash)
+      
       const isValidPassword = verifyPassword(password, user.passwordHash)
       if (!isValidPassword) {
         console.log('Invalid password for user:', username)
         return false
       }
 
+      console.log('Login successful for user:', username)
+      
       // تسجيل الدخول
       await login(user.id, user.name, user.role, username)
       return true

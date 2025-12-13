@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { SetupPage } from './pages/SetupPage'
 import { LoginPage } from './pages/LoginPage'
 import { InitialSetupPage } from './pages/InitialSetupPage'
+import { DebugPage } from './pages/DebugPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { ProjectsListPage } from './pages/ProjectsListPage'
 import { ProjectNewPage } from './pages/ProjectNewPage'
@@ -31,6 +32,7 @@ export default function App() {
           <Route path="/setup" element={<SetupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/initial-setup" element={<InitialSetupPage />} />
+          <Route path="/debug" element={<DebugPage />} />
           <Route
             path="/"
             element={
