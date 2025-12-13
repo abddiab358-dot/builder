@@ -31,20 +31,20 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       onClose={onCancel}
       variant={isDanger ? 'danger' : 'default'}
       footer={
-        <div className="flex justify-between w-full">
+        <div className="flex gap-3 w-full">
           <button
             type="button"
             onClick={onCancel}
-            className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={() => void onConfirm()}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium text-white ${
+            className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium text-white transition-all active:scale-95 ${
               isDanger
-                ? 'bg-red-600 hover:bg-red-700'
+                ? 'bg-danger-600 hover:bg-danger-700'
                 : 'bg-primary-600 hover:bg-primary-700'
             }`}
           >
@@ -53,10 +53,10 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </div>
       }
     >
-      <div className="space-y-2 text-xs text-slate-700 dark:text-slate-100">
-        {description && <p>{description}</p>}
+      <div className="space-y-3">
+        {description && <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{description}</p>}
         {!description && (
-          <p>هل أنت متأكد من تنفيذ هذه العملية؟ لا يمكن التراجع بعد الحذف.</p>
+          <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">هل أنت متأكد من تنفيذ هذه العملية؟ لا يمكن التراجع بعد التأكيد.</p>
         )}
       </div>
     </Modal>
