@@ -47,6 +47,8 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
     
     steps:
     - uses: actions/checkout@v4
@@ -58,9 +60,10 @@ jobs:
         path: dist
     
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
+      uses: actions/upload-pages-artifact@v3
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-        cname: ${{ secrets.CUSTOM_DOMAIN }}
-      if: ${{ success() }}
+        path: './dist'
+    
+    - name: Deploy artifact to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
