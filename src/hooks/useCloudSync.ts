@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { CloudSyncSettings, CloudProvider } from '../types/domain'
 import { useJsonCollection } from './useJsonCollection'
+import { useFileSystem } from '../context/FileSystemContext'
 
 interface SyncResult {
   success: boolean
@@ -10,6 +11,7 @@ interface SyncResult {
 }
 
 export function useCloudSync() {
+  const { settings: settingsHandle } = useFileSystem()
   const [syncSettings, setSyncSettings] = useState<CloudSyncSettings>({
     enabled: false,
     provider: 'none',
@@ -20,10 +22,10 @@ export function useCloudSync() {
   const [syncProgress, setSyncProgress] = useState(0)
 
   // تحميل الإعدادات المحفوظة
-  const { data: allSettings } = useJsonCollection('settings.json')
+  const { data: allSettings = [] } = useJsonCollection('settings.json', settingsHandle)
 
   const loadSettings = useCallback(() => {
-    const settings = allSettings.find((s: any) => s.provider)
+    const settings = allSettings?.find?.((s: any) => s.provider) as CloudSyncSettings | undefined
     if (settings) {
       setSyncSettings(settings)
     }

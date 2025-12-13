@@ -51,12 +51,12 @@ jobs:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       run: |
         npm i -g vercel
-        vercel --prod --token $VERCEL_TOKEN --confirm
-      if: env.VERCEL_TOKEN != ''
+        vercel --prod --token ${{ env.VERCEL_TOKEN }} --confirm
+      if: ${{ env.VERCEL_TOKEN != '' }}
     
     - name: Deploy to GitHub Pages (Alternative)
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
-      if: env.VERCEL_TOKEN == ''
+      if: ${{ env.VERCEL_TOKEN == '' }}

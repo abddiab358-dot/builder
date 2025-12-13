@@ -32,7 +32,7 @@ export function useGlobalSearch(query: string): SearchResult[] {
         project.title.toLowerCase().includes(normalizedQuery) ||
         project.clientName.toLowerCase().includes(normalizedQuery) ||
         project.address?.toLowerCase().includes(normalizedQuery) ||
-        project.description?.toLowerCase().includes(normalizedQuery)
+        project.notes?.toLowerCase().includes(normalizedQuery)
       ) {
         results.push({
           type: 'project',
