@@ -51,12 +51,11 @@ jobs:
       contents: write
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Download artifacts
       uses: actions/download-artifact@v4
@@ -65,12 +64,14 @@ jobs:
         path: dist
     
     - name: Deploy to GitHub Pages
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: './dist'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git checkout --orphan gh-pages
+        git rm -rf .
+        cp -r dist/* .
+        git add .
+        git commit -m "Deploy: $(date '+%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
+        git push -f origin gh-pages
       continue-on-error: true
-    
-    - name: Deploy artifact to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
       continue-on-error: true
