@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { ActivityLogViewer } from '../activity/ActivityLogViewer'
 import { NotificationBell } from '../notifications/NotificationBell'
 import { SearchBar } from '../search/SearchBar'
@@ -9,9 +9,45 @@ const navLinkBase =
   'block w-full text-right px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-primary-50 dark:hover:bg-slate-800'
 
 export function MainLayout() {
-  const { user, logout } = useAuth()
+  const { user, logout, saveCurrentPath } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768)
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+
+  // حفظ الموقع الحالي عند التغيير
+  useEffect(() => {
+    if (location.pathname !== '/dashboard' && saveCurrentPath) {
+      saveCurrentPath(location.pathname)
+    }
+  }, [location.pathname, saveCurrentPath])
+
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (!mobile) setSidebarOpen(true)
+    }
+    
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname, isMobile])
+
+  const handleNavigate = (path: string) => {
+    navigate(path)
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }
 
   const handleLogout = () => {
     logout()
@@ -45,9 +81,37 @@ export function MainLayout() {
   }
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen flex flex-col md:flex-row bg-slate-50 dark:bg-slate-950">
+      {/* Mobile Menu Button */}
+      {isMobile && (
+        <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between shadow-sm">
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6 text-slate-900 dark:text-slate-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <h2 className="text-sm font-bold text-slate-900 dark:text-slate-50">نظام المقاولات</h2>
+          <div className="w-10"></div>
+        </div>
+      )}
+
+      {/* Overlay for mobile */}
+      {isMobile && sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-sm dark:shadow-dark-md">
+      <aside
+        className={`fixed md:relative md:translate-x-0 top-0 right-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-sm dark:shadow-dark-md z-40 transition-transform duration-300 ${
+          sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+        } md:mt-0 mt-16`}
+      >
         {/* Logo Section */}
         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800">
           <div className="space-y-1.5">
@@ -61,6 +125,7 @@ export function MainLayout() {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-2 text-right overflow-y-auto">
           <NavLink
+            onClick={() => handleNavigate('/dashboard')}
             to="/dashboard"
             className={({ isActive }) =>
               `${navLinkBase} ${
@@ -79,6 +144,7 @@ export function MainLayout() {
           </NavLink>
 
           <NavLink
+            onClick={() => handleNavigate('/projects')}
             to="/projects"
             className={({ isActive }) =>
               `${navLinkBase} ${
@@ -97,6 +163,7 @@ export function MainLayout() {
           </NavLink>
 
           <NavLink
+            onClick={() => handleNavigate('/clients')}
             to="/clients"
             className={({ isActive }) =>
               `${navLinkBase} ${
@@ -115,6 +182,7 @@ export function MainLayout() {
           </NavLink>
 
           <NavLink
+            onClick={() => handleNavigate('/settings')}
             to="/settings"
             className={({ isActive }) =>
               `${navLinkBase} ${
@@ -146,9 +214,9 @@ export function MainLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col w-full md:mt-0 mt-16">
         {/* Header */}
-        <header className="px-8 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-4 shadow-sm dark:shadow-dark-md">
+        <header className="px-4 md:px-8 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between gap-4 shadow-sm dark:shadow-dark-md">
           <div className="flex items-center gap-4 relative">
             <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
             <NotificationBell />
@@ -209,18 +277,18 @@ export function MainLayout() {
             </div>
           </div>
           <SearchBar />
-          <div className="flex-1 text-sm text-slate-600 dark:text-slate-300 text-right font-medium">
+          <div className="hidden lg:flex flex-1 text-sm text-slate-600 dark:text-slate-300 text-right font-medium">
             اختر مشروعًا أو أنشئ مشروعًا جديدًا لبدء العمل
           </div>
         </header>
 
         {/* Content Area */}
-        <section className="flex-1 overflow-y-auto p-8">
+        <section className="flex-1 overflow-y-auto p-4 md:p-8">
           <Outlet />
         </section>
 
         {/* Footer */}
-        <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm dark:shadow-dark-md">
+        <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 md:p-4 shadow-sm dark:shadow-dark-md">
           <ActivityLogViewer compact />
         </footer>
       </main>

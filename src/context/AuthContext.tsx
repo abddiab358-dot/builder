@@ -8,6 +8,7 @@ export interface AuthUser {
   role: 'manager' | 'staff' | 'viewer'
   isLoggedIn: boolean
   username?: string
+  lastPath?: string
 }
 
 interface AuthContextType {
@@ -16,6 +17,8 @@ interface AuthContextType {
   loginWithPassword: (username: string, password: string) => Promise<boolean>
   logout: () => void
   updateUser: (name: string, role: PermissionUser['role']) => void
+  saveCurrentPath: (path: string) => void
+  getLastPath: () => string
   isLoading: boolean
 }
 
@@ -115,8 +118,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const saveCurrentPath = (path: string) => {
+    if (user) {
+      const updatedUser = { ...user, lastPath: path }
+      setUser(updatedUser)
+      try {
+        saveJSONFile('session.json', { user: updatedUser })
+      } catch (error) {
+        console.error('Failed to save path:', error)
+      }
+    }
+  }
+
+  const getLastPath = (): string => {
+    return user?.lastPath || '/dashboard'
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, loginWithPassword, logout, updateUser, isLoading }}>
+    <AuthContext.Provider value={{ user, login, loginWithPassword, logout, updateUser, saveCurrentPath, getLastPath, isLoading }}>
       {children}
     </AuthContext.Provider>
   )
