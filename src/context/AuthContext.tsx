@@ -67,9 +67,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       try {
         await initializeDefaultData()
-        const data = await readJSONFile('session.json')
-        if (data && data.user) {
-          setUser(data.user)
+        
+        // Try to load session from localStorage first (reliable)
+        const stored = localStorage.getItem('file:session.json')
+        if (stored) {
+          try {
+            const data = JSON.parse(stored)
+            if (data && data.user) {
+              console.log('Session restored from localStorage:', data.user.username)
+              setUser(data.user)
+            }
+          } catch (error) {
+            console.error('Failed to parse session from localStorage:', error)
+          }
         }
       } catch (error) {
         console.error('Failed to initialize:', error)
@@ -91,43 +101,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(newUser)
 
-    // حفظ الجلسة
+    // Save session to localStorage directly (most reliable)
+    try {
+      localStorage.setItem('file:session.json', JSON.stringify({ user: newUser }))
+      console.log('Session saved to localStorage:', username)
+    } catch (error) {
+      console.error('Failed to save session to localStorage:', error)
+    }
+
+    // Also try to save to file system
     try {
       await saveJSONFile('session.json', { user: newUser })
     } catch (error) {
-      console.error('Failed to save session:', error)
+      console.error('Failed to save session to file system:', error)
     }
   }
 
   const loginWithPassword = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('Login attempt for user:', username)
+      console.log('localStorage keys:', Object.keys(localStorage))
       
-      // محاولة القراءة من الملفات أولاً
+      // قراءة مباشرة من localStorage - هذا موثوق أكثر
       let usersData: any[] | null = null
       
-      try {
-        const dir = await getSavedDirectoryHandle()
-        if (dir) {
-          const handle = await dir.getFileHandle('permissions.json').catch(() => null)
-          if (handle) {
-            const file = await handle.getFile()
-            const text = await file.text()
-            if (text.trim()) {
-              usersData = JSON.parse(text)
-              console.log('Loaded users from file system:', usersData)
-            }
-          }
-        }
-      } catch (fileError) {
-        console.log('File system access failed, falling back to localStorage', fileError)
-      }
+      const stored = localStorage.getItem('file:permissions.json')
+      console.log('Raw localStorage data:', stored)
       
-      // الرجوع إلى localStorage إذا فشل الملف
-      if (!usersData) {
-        const stored = localStorage.getItem('file:permissions.json')
-        usersData = stored ? JSON.parse(stored) : []
-        console.log('Loaded users from localStorage:', usersData)
+      if (stored) {
+        try {
+          usersData = JSON.parse(stored)
+          console.log('Parsed users from localStorage:', usersData)
+        } catch (parseError) {
+          console.error('Failed to parse localStorage data:', parseError)
+        }
       }
 
       const users = usersData || []
@@ -136,6 +143,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const user = users.find((u: any) => u.username === username)
       if (!user) {
         console.log('User not found:', username, 'Available users:', users.map((u: any) => u.username))
+        // إذا لم يوجد، حاول إضافة البيانات الافتراضية
+        console.log('Attempting to reinitialize default data...')
+        await initializeDefaultData()
+        // حاول مرة أخرى
+        const storedAgain = localStorage.getItem('file:permissions.json')
+        if (storedAgain) {
+          const retryUsers = JSON.parse(storedAgain)
+          const retryUser = retryUsers.find((u: any) => u.username === username)
+          if (retryUser) {
+            console.log('User found after reinitialization:', retryUser.name)
+            const inputHash = hashPassword(password)
+            const isValidPassword = verifyPassword(password, retryUser.passwordHash)
+            if (isValidPassword) {
+              await login(retryUser.id, retryUser.name, retryUser.role, username)
+              return true
+            }
+          }
+        }
         return false
       }
 
@@ -164,12 +189,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    // حذف ملف الجلسة
+    // حذف ملف الجلسة من localStorage
     try {
-      const handle = (window as any).projectFolderHandle
-      if (handle) {
-        handle.removeEntry('session.json').catch(() => {})
-      }
+      localStorage.removeItem('file:session.json')
+      console.log('Session cleared from localStorage')
     } catch (error) {
       console.error('Failed to clear session:', error)
     }
@@ -179,9 +202,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const updatedUser = { ...user, name, role }
       setUser(updatedUser)
-      // حفظ التحديث
+      // Save to localStorage
       try {
-        saveJSONFile('session.json', { user: updatedUser })
+        localStorage.setItem('file:session.json', JSON.stringify({ user: updatedUser }))
+        // Also try to save to file system
+        saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
       } catch (error) {
         console.error('Failed to update session:', error)
       }
@@ -193,7 +218,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, lastPath: path }
       setUser(updatedUser)
       try {
-        saveJSONFile('session.json', { user: updatedUser })
+        // Save to localStorage
+        localStorage.setItem('file:session.json', JSON.stringify({ user: updatedUser }))
+        // Also try to save to file system
+        saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
       } catch (error) {
         console.error('Failed to save path:', error)
       }
