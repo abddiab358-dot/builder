@@ -57,6 +57,18 @@ export function SettingsPage() {
     setNewPassword('')
   }
 
+  const handleThemeChange = (isDark: boolean) => {
+    // تطبيق الـ theme على الفور
+    const root = document.documentElement
+    if (isDark) {
+      root.classList.add('dark')
+    } else {
+      root.classList.remove('dark')
+    }
+    // ثم حفظ البيانات
+    update({ theme: isDark ? 'dark' : 'light' })
+  }
+
   const getRoleLabel = (role: string) => {
     const labels: { [key: string]: string } = {
       manager: 'مدير',
@@ -116,7 +128,7 @@ export function SettingsPage() {
               <input
                 type="checkbox"
                 checked={settings?.theme === 'dark'}
-                onChange={(e) => update({ theme: e.target.checked ? 'dark' : 'light' })}
+                onChange={(e) => handleThemeChange(e.target.checked)}
                 className="sr-only peer"
               />
               <div className="w-11 h-6 bg-slate-300 dark:bg-slate-600 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-primary-500 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
