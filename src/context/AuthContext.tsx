@@ -33,7 +33,7 @@ async function initializeDefaultData() {
         id: 'osamah-admin-001',
         name: 'Osamah',
         username: 'osamah',
-        passwordHash: '43c8b50',
+        passwordHash: '14399c1',
         role: 'manager',
         createdAt: new Date().toISOString()
       }
