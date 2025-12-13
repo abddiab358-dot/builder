@@ -24,26 +24,59 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
+// Initialize default data in localStorage if not exists
+async function initializeDefaultData() {
+  const stored = localStorage.getItem('file:permissions.json')
+  if (!stored) {
+    const defaultPermissions = [
+      {
+        id: 'osamah-admin-001',
+        name: 'Osamah',
+        username: 'osamah',
+        passwordHash: '43c8b50',
+        role: 'manager',
+        createdAt: new Date().toISOString()
+      }
+    ]
+    localStorage.setItem('file:permissions.json', JSON.stringify(defaultPermissions))
+  }
+
+  // Initialize other default files
+  if (!localStorage.getItem('file:projects.json')) {
+    localStorage.setItem('file:projects.json', JSON.stringify([]))
+  }
+  if (!localStorage.getItem('file:tasks.json')) {
+    localStorage.setItem('file:tasks.json', JSON.stringify([]))
+  }
+  if (!localStorage.getItem('file:clients.json')) {
+    localStorage.setItem('file:clients.json', JSON.stringify([]))
+  }
+  if (!localStorage.getItem('file:session.json')) {
+    localStorage.setItem('file:session.json', JSON.stringify({}))
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // تحميل المستخدم من التخزين عند التشغيل
+  // Initialize default data and load user
   useEffect(() => {
-    const loadUser = async () => {
+    const initialize = async () => {
       try {
+        await initializeDefaultData()
         const data = await readJSONFile('session.json')
         if (data && data.user) {
           setUser(data.user)
         }
       } catch (error) {
-        // لا توجد جلسة محفوظة
+        console.error('Failed to initialize:', error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    loadUser()
+    initialize()
   }, [])
 
   const login = async (userId: string, name: string, role: PermissionUser['role'], username?: string) => {
