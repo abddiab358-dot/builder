@@ -126,17 +126,3 @@ export function ProjectCard({ project, onDelete }: Props) {
     </div>
   )
 }
-          {onDelete && (
-            <button
-              type="button"
-              onClick={() => onDelete(project.id)}
-              className="px-2 py-1 rounded-md text-[11px] bg-red-50 text-red-600 hover:bg-red-100"
-            >
-              حذف
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}

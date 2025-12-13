@@ -74,30 +74,43 @@ export function BackupManager() {
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3 text-right">
-      <div className="text-sm font-semibold text-slate-900">النسخ الاحتياطي</div>
-      <p className="text-xs text-slate-600">
-        يقوم النظام بحفظ بياناتك في ملفات JSON على جهازك. يمكنك إنشاء ملف نسخ احتياطي كامل واستعادته عند الحاجة.
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4 text-right shadow-sm dark:shadow-dark-md">
+      <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+        النسخ الاحتياطي والاستعادة
+      </h2>
+      <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+        يقوم النظام بحفظ بياناتك في ملفات JSON على جهازك. يمكنك إنشاء نسخة احتياطية كاملة واستعادتها عند الحاجة بكل أمان.
       </p>
-      <div className="flex flex-wrap gap-2 justify-end">
+      <div className="flex flex-wrap gap-3 justify-end">
         <button
           type="button"
           onClick={exportBackup}
           disabled={busy}
-          className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700 disabled:bg-slate-300"
+          className="px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 dark:bg-primary-700 text-white hover:bg-primary-700 dark:hover:bg-primary-800 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
         >
-          إنشاء نسخة احتياطية
+          {busy ? '⏳ جاري الإنشاء...' : '💾 إنشاء نسخة احتياطية'}
         </button>
         <button
           type="button"
           onClick={importBackup}
           disabled={busy}
-          className="px-3 py-1.5 rounded-md text-xs bg-slate-200 text-slate-800 hover:bg-slate-300 disabled:bg-slate-300"
+          className="px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-50 hover:bg-slate-300 dark:hover:bg-slate-600 disabled:bg-slate-400 dark:disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors"
         >
-          استيراد نسخة احتياطية
+          {busy ? '⏳ جاري الاستيراد...' : '📂 استيراد نسخة احتياطية'}
         </button>
       </div>
-      {message && <div className="text-xs text-slate-700">{message}</div>}
+      {message && (
+        <div className={`text-sm p-3 rounded-lg ${
+          message.includes('نجاح')
+            ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
+            : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+        }`}>
+          {message}
+        </div>
+      )}
     </div>
   )
 }

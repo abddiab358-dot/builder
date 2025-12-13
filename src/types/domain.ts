@@ -177,6 +177,8 @@ export interface PermissionUser {
   name: string
   role: UserRole
   createdAt: string
+  username?: string
+  passwordHash?: string
 }
 
 export interface ProjectLocation {
@@ -187,4 +189,16 @@ export interface ProjectLocation {
   address?: string
   snapshotFileId?: string
   createdAt: string
+}
+
+export type CloudProvider = 'google' | 'microsoft' | 'none'
+
+export interface CloudSyncSettings {
+  enabled: boolean
+  provider: CloudProvider
+  lastSyncTime?: string
+  autoSync: boolean
+  syncInterval?: number // in minutes
+  accessToken?: string
+  refreshToken?: string
 }

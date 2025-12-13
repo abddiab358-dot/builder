@@ -7,10 +7,20 @@ export function usePermissions() {
   const { permissions } = useFileSystem()
   const collection = useJsonCollection<PermissionUser>('permissions', permissions)
 
-  const addUser = async (name: string, role: UserRole) => {
+  const addUser = async (name: string, role: UserRole, username?: string, passwordHash?: string) => {
     const id = createId()
     const now = new Date().toISOString()
-    await collection.save((items) => [...items, { id, name, role, createdAt: now }])
+    const newUser: any = { id, name, role, createdAt: now }
+    
+    // إضافة بيانات تسجيل الدخول إذا وجدت
+    if (username) {
+      newUser.username = username
+    }
+    if (passwordHash) {
+      newUser.passwordHash = passwordHash
+    }
+    
+    await collection.save((items) => [...items, newUser])
   }
 
   const updateUserRole = async (id: string, role: UserRole) => {
