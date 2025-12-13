@@ -1,0 +1,711 @@
+import { useState } from 'react'
+import { useParams } from 'react-router-dom'
+import { useProjects } from '../hooks/useProjects'
+import { useInvoices } from '../hooks/useInvoices'
+import { usePayments } from '../hooks/usePayments'
+import { useExpenses } from '../hooks/useExpenses'
+import { useWorkerLogs } from '../hooks/useWorkerLogs'
+import { Modal } from '../components/ui/Modal'
+import { BackButton } from '../components/ui/BackButton'
+import { InvoiceItem, ExpenseCategory } from '../types/domain'
+import { createId } from '../utils/id'
+
+export function ProjectFinancePage() {
+  const { id } = useParams<{ id: string }>()
+  const { data: projects } = useProjects()
+  const invoicesState = useInvoices(id)
+  const paymentsState = usePayments(id)
+  const expensesState = useExpenses(id)
+  const workerLogsState = useWorkerLogs(id)
+
+  const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'expenses' | 'workersLog'>('invoices')
+
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
+  const [invoiceNumber, setInvoiceNumber] = useState('')
+  const [invoiceDate, setInvoiceDate] = useState('')
+  const [invoiceDueDate, setInvoiceDueDate] = useState('')
+  const [invoiceAmount, setInvoiceAmount] = useState('')
+  const [invoiceTaxRate, setInvoiceTaxRate] = useState('')
+  const [invoiceDescription, setInvoiceDescription] = useState('')
+
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [paymentInvoiceId, setPaymentInvoiceId] = useState('')
+  const [paymentMethod, setPaymentMethod] = useState('')
+
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false)
+  const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('materials')
+  const [expenseLabel, setExpenseLabel] = useState('')
+  const [expenseAmount, setExpenseAmount] = useState('')
+  const [expenseDate, setExpenseDate] = useState('')
+
+  const [workerLogModalOpen, setWorkerLogModalOpen] = useState(false)
+  const [logDate, setLogDate] = useState('')
+  const [logWorkersCount, setLogWorkersCount] = useState('')
+  const [logHoursPerWorker, setLogHoursPerWorker] = useState('')
+  const [logHourlyRate, setLogHourlyRate] = useState('')
+
+  if (!id) return null
+
+  const project = (projects ?? []).find((p) => p.id === id)
+
+  const invoices = invoicesState.data ?? []
+  const payments = paymentsState.data ?? []
+  const expenses = expensesState.data ?? []
+  const workerLogs = workerLogsState.data ?? []
+
+  const totalInvoices = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+  const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
+  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+  const totalLabor = workerLogs.reduce((sum, l) => sum + (l.totalCost || 0), 0)
+  const remaining = totalInvoices - totalPayments
+
+  const handleCreateInvoice = async () => {
+    if (!invoiceNumber.trim() || !invoiceDate || !invoiceAmount) return
+    const baseAmount = Number(invoiceAmount)
+    if (!baseAmount || Number.isNaN(baseAmount)) return
+
+    const item: InvoiceItem = {
+      id: createId(),
+      description: invoiceDescription.trim() || 'بنود الفاتورة',
+      quantity: 1,
+      unitPrice: baseAmount,
+      total: baseAmount,
+    }
+
+    await invoicesState.createInvoice({
+      projectId: id,
+      number: invoiceNumber.trim(),
+      date: invoiceDate,
+      dueDate: invoiceDueDate || undefined,
+      items: [item],
+      taxRate: invoiceTaxRate ? Number(invoiceTaxRate) : undefined,
+      notes: invoiceDescription.trim() || undefined,
+      logoFileId: undefined,
+    } as any)
+
+    setInvoiceNumber('')
+    setInvoiceDate('')
+    setInvoiceDueDate('')
+    setInvoiceAmount('')
+    setInvoiceTaxRate('')
+    setInvoiceDescription('')
+    setInvoiceModalOpen(false)
+  }
+
+  const handleCreatePayment = async () => {
+    if (!paymentDate || !paymentAmount) return
+    const amount = Number(paymentAmount)
+    if (!amount || Number.isNaN(amount)) return
+
+    await paymentsState.createPayment({
+      projectId: id,
+      invoiceId: paymentInvoiceId || undefined,
+      date: paymentDate,
+      amount,
+      method: paymentMethod || undefined,
+      notes: undefined,
+    } as any)
+
+    setPaymentDate('')
+    setPaymentAmount('')
+    setPaymentInvoiceId('')
+    setPaymentMethod('')
+    setPaymentModalOpen(false)
+  }
+
+  const handleCreateExpense = async () => {
+    if (!expenseLabel.trim() || !expenseDate || !expenseAmount) return
+    const amount = Number(expenseAmount)
+    if (!amount || Number.isNaN(amount)) return
+
+    await expensesState.createExpense({
+      projectId: id,
+      category: expenseCategory,
+      label: expenseLabel.trim(),
+      amount,
+      date: expenseDate,
+      notes: undefined,
+    } as any)
+
+    setExpenseLabel('')
+    setExpenseAmount('')
+    setExpenseDate('')
+    setExpenseModalOpen(false)
+  }
+
+  const handleCreateWorkerLog = async () => {
+    if (!logDate || !logWorkersCount || !logHoursPerWorker || !logHourlyRate) return
+    const workersCount = Number(logWorkersCount)
+    const hours = Number(logHoursPerWorker)
+    const rate = Number(logHourlyRate)
+    if ([workersCount, hours, rate].some((v) => !v || Number.isNaN(v))) return
+
+    await workerLogsState.createLog({
+      projectId: id,
+      date: logDate,
+      workersCount,
+      hoursPerWorker: hours,
+      hourlyRate: rate,
+      notes: undefined,
+    } as any)
+
+    setLogDate('')
+    setLogWorkersCount('')
+    setLogHoursPerWorker('')
+    setLogHourlyRate('')
+    setWorkerLogModalOpen(false)
+  }
+
+  return (
+    <div className="space-y-4 text-right">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
+        <div>
+          <h2 className="text-lg font-bold text-slate-900">المالية والتكاليف للمشروع</h2>
+          {project && <p className="text-xs text-slate-600">{project.title}</p>}
+        </div>
+        <BackButton fallbackPath={`/projects/${id}`} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500">إجمالي الفواتير</div>
+          <div className="text-base font-semibold text-slate-900">{totalInvoices.toLocaleString('ar-EG')}</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500">إجمالي الدفعات المستلمة</div>
+          <div className="text-base font-semibold text-emerald-700">{totalPayments.toLocaleString('ar-EG')}</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500">المتبقي على العميل</div>
+          <div className="text-base font-semibold text-amber-700">{remaining.toLocaleString('ar-EG')}</div>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500">إجمالي التكاليف (مصاريف + عمال)</div>
+          <div className="text-base font-semibold text-slate-900">
+            {(totalExpenses + totalLabor).toLocaleString('ar-EG')}
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-lg">
+        <div className="border-b border-slate-200 flex text-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab('invoices')}
+            className={`flex-1 px-3 py-2 text-center ${
+              activeTab === 'invoices'
+                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            الفواتير
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('payments')}
+            className={`flex-1 px-3 py-2 text-center ${
+              activeTab === 'payments'
+                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            الدفعات
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('expenses')}
+            className={`flex-1 px-3 py-2 text-center ${
+              activeTab === 'expenses'
+                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            المصاريف
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('workersLog')}
+            className={`flex-1 px-3 py-2 text-center ${
+              activeTab === 'workersLog'
+                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            يوميات العمال
+          </button>
+        </div>
+
+        <div className="p-4 space-y-3 text-xs text-slate-700">
+          {activeTab === 'invoices' && (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm font-semibold text-slate-900">الفواتير</div>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceModalOpen(true)}
+                  className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  فاتورة جديدة
+                </button>
+              </div>
+              {invoices.length === 0 && <div>لا توجد فواتير مسجلة بعد.</div>}
+              {invoices.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-right">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1 font-medium">رقم الفاتورة</th>
+                        <th className="px-2 py-1 font-medium">التاريخ</th>
+                        <th className="px-2 py-1 font-medium">الاستحقاق</th>
+                        <th className="px-2 py-1 font-medium">الإجمالي</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoices.map((inv) => (
+                        <tr key={inv.id} className="border-t border-slate-100">
+                          <td className="px-2 py-1">{inv.number}</td>
+                          <td className="px-2 py-1">
+                            {inv.date && new Date(inv.date).toLocaleDateString('ar-EG')}
+                          </td>
+                          <td className="px-2 py-1">
+                            {inv.dueDate && new Date(inv.dueDate).toLocaleDateString('ar-EG')}
+                          </td>
+                          <td className="px-2 py-1">
+                            {inv.total.toLocaleString('ar-EG')}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'payments' && (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm font-semibold text-slate-900">دفعات العملاء</div>
+                <button
+                  type="button"
+                  onClick={() => setPaymentModalOpen(true)}
+                  className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  تسجيل دفعة
+                </button>
+              </div>
+              {payments.length === 0 && <div>لا توجد دفعات مسجلة بعد.</div>}
+              {payments.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-right">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1 font-medium">التاريخ</th>
+                        <th className="px-2 py-1 font-medium">المبلغ</th>
+                        <th className="px-2 py-1 font-medium">طريقة الدفع</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map((p) => (
+                        <tr key={p.id} className="border-t border-slate-100">
+                          <td className="px-2 py-1">
+                            {p.date && new Date(p.date).toLocaleDateString('ar-EG')}
+                          </td>
+                          <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')}</td>
+                          <td className="px-2 py-1">{p.method || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'expenses' && (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm font-semibold text-slate-900">مصاريف المشروع</div>
+                <button
+                  type="button"
+                  onClick={() => setExpenseModalOpen(true)}
+                  className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  إضافة مصروف
+                </button>
+              </div>
+              {expenses.length === 0 && <div>لا توجد مصاريف مسجلة بعد.</div>}
+              {expenses.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-right">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1 font-medium">التاريخ</th>
+                        <th className="px-2 py-1 font-medium">الوصف</th>
+                        <th className="px-2 py-1 font-medium">النوع</th>
+                        <th className="px-2 py-1 font-medium">المبلغ</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {expenses.map((e) => (
+                        <tr key={e.id} className="border-t border-slate-100">
+                          <td className="px-2 py-1">
+                            {e.date && new Date(e.date).toLocaleDateString('ar-EG')}
+                          </td>
+                          <td className="px-2 py-1">{e.label}</td>
+                          <td className="px-2 py-1">
+                            {e.category === 'materials' && 'مواد'}
+                            {e.category === 'equipment' && 'معدات'}
+                            {e.category === 'fuel' && 'محروقات'}
+                            {e.category === 'extra_work' && 'أعمال إضافية'}
+                            {e.category === 'other' && 'أخرى'}
+                          </td>
+                          <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === 'workersLog' && (
+            <>
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm font-semibold text-slate-900">سجل يوميات العمال</div>
+                <button
+                  type="button"
+                  onClick={() => setWorkerLogModalOpen(true)}
+                  className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+                >
+                  تسجيل يومية عمال
+                </button>
+              </div>
+              {workerLogs.length === 0 && <div>لا توجد سجلات يومية حتى الآن.</div>}
+              {workerLogs.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-xs text-right">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="px-2 py-1 font-medium">التاريخ</th>
+                        <th className="px-2 py-1 font-medium">عدد العمال</th>
+                        <th className="px-2 py-1 font-medium">الساعات للعامل</th>
+                        <th className="px-2 py-1 font-medium">تكلفة الساعة</th>
+                        <th className="px-2 py-1 font-medium">إجمالي التكلفة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {workerLogs.map((l) => (
+                        <tr key={l.id} className="border-t border-slate-100">
+                          <td className="px-2 py-1">
+                            {l.date && new Date(l.date).toLocaleDateString('ar-EG')}
+                          </td>
+                          <td className="px-2 py-1">{l.workersCount}</td>
+                          <td className="px-2 py-1">{l.hoursPerWorker}</td>
+                          <td className="px-2 py-1">{l.hourlyRate.toLocaleString('ar-EG')}</td>
+                          <td className="px-2 py-1">{l.totalCost.toLocaleString('ar-EG')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <Modal
+        open={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        title="إنشاء فاتورة جديدة"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => setInvoiceModalOpen(false)}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateInvoice}
+              className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+            >
+              حفظ الفاتورة
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">رقم الفاتورة</label>
+              <input
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">تاريخ الفاتورة</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={invoiceDate}
+                onChange={(e) => setInvoiceDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">تاريخ الاستحقاق (اختياري)</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={invoiceDueDate}
+                onChange={(e) => setInvoiceDueDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">قيمة الفاتورة</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={invoiceAmount}
+                onChange={(e) => setInvoiceAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">نسبة الضريبة % (اختياري)</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={invoiceTaxRate}
+                onChange={(e) => setInvoiceTaxRate(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">وصف البنود / ملاحظات</label>
+            <textarea
+              rows={3}
+              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={invoiceDescription}
+              onChange={(e) => setInvoiceDescription(e.target.value)}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={paymentModalOpen}
+        onClose={() => setPaymentModalOpen(false)}
+        title="تسجيل دفعة جديدة"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => setPaymentModalOpen(false)}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleCreatePayment}
+              className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+            >
+              حفظ الدفعة
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">التاريخ</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">المبلغ</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">ربط الدفعة بفاتورة (اختياري)</label>
+            <select
+              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={paymentInvoiceId}
+              onChange={(e) => setPaymentInvoiceId(e.target.value)}
+            >
+              <option value="">بدون</option>
+              {invoices.map((inv) => (
+                <option key={inv.id} value={inv.id}>
+                  {inv.number}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">طريقة الدفع (اختياري)</label>
+            <input
+              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              placeholder="نقدي، تحويل بنكي، شيك..."
+            />
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={expenseModalOpen}
+        onClose={() => setExpenseModalOpen(false)}
+        title="إضافة مصروف جديد"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => setExpenseModalOpen(false)}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateExpense}
+              className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+            >
+              حفظ المصروف
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">التاريخ</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={expenseDate}
+                onChange={(e) => setExpenseDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">المبلغ</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={expenseAmount}
+                onChange={(e) => setExpenseAmount(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">الوصف</label>
+            <input
+              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={expenseLabel}
+              onChange={(e) => setExpenseLabel(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">النوع</label>
+            <select
+              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={expenseCategory}
+              onChange={(e) => setExpenseCategory(e.target.value as ExpenseCategory)}
+            >
+              <option value="materials">مواد</option>
+              <option value="equipment">معدات</option>
+              <option value="fuel">محروقات</option>
+              <option value="extra_work">أعمال إضافية</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={workerLogModalOpen}
+        onClose={() => setWorkerLogModalOpen(false)}
+        title="تسجيل يومية عمال"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => setWorkerLogModalOpen(false)}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleCreateWorkerLog}
+              className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+            >
+              حفظ السجل
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">التاريخ</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">عدد العمال</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logWorkersCount}
+                onChange={(e) => setLogWorkersCount(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">الساعات لكل عامل</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logHoursPerWorker}
+                onChange={(e) => setLogHoursPerWorker(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">تكلفة الساعة</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logHourlyRate}
+                onChange={(e) => setLogHourlyRate(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  )
+}
