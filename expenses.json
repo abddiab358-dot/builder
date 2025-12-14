@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "exp-001",
+    "projectId": "554b5253-6559-4e97-b63f-c83483fdcf89",
+    "date": "2025-12-15",
+    "amount": 25000,
+    "category": "materials",
+    "label": "مواد بناء",
+    "createdAt": "2025-12-15T00:00:00.000Z"
+  }
+]

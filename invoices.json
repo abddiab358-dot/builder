@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "id": "inv-001",
+    "projectId": "554b5253-6559-4e97-b63f-c83483fdcf89",
+    "number": "001",
+    "date": "2025-12-15",
+    "dueDate": "2025-12-25",
+    "items": [
+      {
+        "id": "item-001",
+        "description": "أعمال البناء",
+        "quantity": 1,
+        "unitPrice": 100000
+      }
+    ],
+    "subtotal": 100000,
+    "taxRate": 0,
+    "taxAmount": 0,
+    "total": 100000,
+    "paidAmount": 0,
+    "notes": "فاتورة اختبار",
+    "createdAt": "2025-12-15T00:00:00.000Z"
+  }
+]

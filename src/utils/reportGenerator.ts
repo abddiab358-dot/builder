@@ -179,11 +179,11 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
         <div class="info-grid">
             <div class="info-box">
                 <label>اسم العميل</label>
-                <div class="value">${data.project.client || 'غير محدد'}</div>
+                <div class="value">${data.project.clientName || 'غير محدد'}</div>
             </div>
             <div class="info-box">
                 <label>الموقع</label>
-                <div class="value">${data.project.location || 'غير محدد'}</div>
+                <div class="value">${data.project.address || 'غير محدد'}</div>
             </div>
             <div class="info-box">
                 <label>آخر نسبة إنجاز</label>
