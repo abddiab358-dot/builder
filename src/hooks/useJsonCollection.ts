@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { readJSONFile, saveJSONFile } from '../storage/fileSystem'
+import { readJSONFileHandle, saveJSONFileHandle } from '../storage/fileSystem'
 
 export function useJsonCollection<T extends { id: string }>(
   key: string,
@@ -12,7 +12,7 @@ export function useJsonCollection<T extends { id: string }>(
     enabled: !!handle,
     queryFn: async () => {
       if (!handle) return []
-      const data = await readJSONFile<T[]>(handle)
+      const data = await readJSONFileHandle<T[]>(handle)
       return Array.isArray(data) ? data : []
     },
   })
@@ -20,9 +20,9 @@ export function useJsonCollection<T extends { id: string }>(
   const mutation = useMutation({
     mutationFn: async (updater: (items: T[]) => T[]) => {
       if (!handle) throw new Error('لا يوجد ملف مرتبط بهذه البيانات')
-      const current = (await readJSONFile<T[]>(handle)) ?? []
-      const next = updater(current)
-      await saveJSONFile(handle, next)
+      const current = (await readJSONFileHandle<T[]>(handle)) ?? []
+      const next = updater(Array.isArray(current) ? current : [])
+      await saveJSONFileHandle(handle, next)
       return next
     },
     onSuccess: () => {
