@@ -39,19 +39,19 @@ export interface ActivityEvent {
   id: string
   action: string
   entity:
-    | 'project'
-    | 'task'
-    | 'client'
-    | 'worker'
-    | 'file'
-    | 'settings'
-    | 'invoice'
-    | 'payment'
-    | 'expense'
-    | 'dailyReport'
-    | 'workerLog'
-    | 'notification'
-    | 'permission'
+  | 'project'
+  | 'task'
+  | 'client'
+  | 'worker'
+  | 'file'
+  | 'settings'
+  | 'invoice'
+  | 'payment'
+  | 'expense'
+  | 'dailyReport'
+  | 'workerLog'
+  | 'notification'
+  | 'permission'
   entityId: string
   timestamp: string
   details?: string
@@ -197,6 +197,7 @@ export interface ProjectLocation {
 
 export type CloudProvider = 'google' | 'microsoft' | 'none'
 
+// ... existing code ...
 export interface CloudSyncSettings {
   enabled: boolean
   provider: CloudProvider
@@ -205,4 +206,18 @@ export interface CloudSyncSettings {
   syncInterval?: number // in minutes
   accessToken?: string
   refreshToken?: string
+}
+
+export interface SmartFundTransaction {
+  id: string
+  projectId: string
+  date: string
+  amount: number
+  currency: 'USD' | 'SYP'
+  type: 'deposit' | 'expense'
+  category?: string
+  label?: string
+  notes?: string
+  exchangeRate?: number // Rate used for conversion/display at time of entry
+  createdAt: string
 }

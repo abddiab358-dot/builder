@@ -72,9 +72,15 @@ export function ProjectFinancePage() {
   const remaining = totalInvoices - totalPayments
 
   const handleCreateInvoice = async () => {
-    if (!invoiceNumber.trim() || !invoiceDate || !invoiceAmount) return
+    if (!invoiceNumber.trim() || !invoiceDate || !invoiceAmount) {
+      alert('يرجى تعبئة الحقول المطلوبة (الرقم، التاريخ، المبلغ)')
+      return
+    }
     const baseAmount = Number(invoiceAmount)
-    if (!baseAmount || Number.isNaN(baseAmount)) return
+    if (!baseAmount || Number.isNaN(baseAmount)) {
+      alert('المبلغ غير صالح')
+      return
+    }
 
     try {
       const item: InvoiceItem = {
@@ -106,13 +112,20 @@ export function ProjectFinancePage() {
       setInvoiceModalOpen(false)
     } catch (error) {
       console.error('خطأ في إنشاء الفاتورة:', error)
+      alert('حدث خطأ أثناء حفظ الفاتورة')
     }
   }
 
   const handleCreatePayment = async () => {
-    if (!paymentDate || !paymentAmount) return
+    if (!paymentDate || !paymentAmount) {
+      alert('يرجى تعبئة الحقول (التاريخ، المبلغ)')
+      return
+    }
     const amount = Number(paymentAmount)
-    if (!amount || Number.isNaN(amount)) return
+    if (!amount || Number.isNaN(amount)) {
+      alert('المبلغ غير صالح')
+      return
+    }
 
     try {
       await paymentsState.createPayment({
@@ -137,9 +150,15 @@ export function ProjectFinancePage() {
   }
 
   const handleCreateExpense = async () => {
-    if (!expenseLabel.trim() || !expenseDate || !expenseAmount) return
+    if (!expenseLabel.trim() || !expenseDate || !expenseAmount) {
+      alert('يرجى تعبئة جميع الحقول المطلوبة (الوصف، التاريخ، المبلغ)')
+      return
+    }
     const amount = Number(expenseAmount)
-    if (!amount || Number.isNaN(amount)) return
+    if (!amount || Number.isNaN(amount)) {
+      alert('المبلغ غير صالح')
+      return
+    }
 
     try {
       await expensesState.createExpense({
@@ -162,13 +181,20 @@ export function ProjectFinancePage() {
       setExpenseModalOpen(false)
     } catch (error) {
       console.error('خطأ في إنشاء المصروف:', error)
+      alert('حدث خطأ أثناء حفظ المصروف')
     }
   }
 
   const handleCreateWorkerLog = async () => {
-    if (!logDate || !logWorkerId || !logWorkersCount) return
+    if (!logDate || !logWorkerId || !logWorkersCount) {
+      alert('يرجى تعبئة الحقول المطلوبة (التاريخ، العامل، العدد)')
+      return
+    }
     const workersCount = Number(logWorkersCount)
-    if (!workersCount || Number.isNaN(workersCount)) return
+    if (!workersCount || Number.isNaN(workersCount)) {
+      alert('عدد العمال غير صالح')
+      return
+    }
 
     try {
       const selectedWorker = (workersState.data ?? []).find((w) => w.id === logWorkerId)
@@ -307,44 +333,40 @@ export function ProjectFinancePage() {
           <button
             type="button"
             onClick={() => setActiveTab('invoices')}
-            className={`flex-1 px-3 py-2 text-center ${
-              activeTab === 'invoices'
-                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            className={`flex-1 px-3 py-2 text-center ${activeTab === 'invoices'
+              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
           >
             الفواتير
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('payments')}
-            className={`flex-1 px-3 py-2 text-center ${
-              activeTab === 'payments'
-                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            className={`flex-1 px-3 py-2 text-center ${activeTab === 'payments'
+              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
           >
             الدفعات
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('expenses')}
-            className={`flex-1 px-3 py-2 text-center ${
-              activeTab === 'expenses'
-                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            className={`flex-1 px-3 py-2 text-center ${activeTab === 'expenses'
+              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
           >
             المصاريف
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('workersLog')}
-            className={`flex-1 px-3 py-2 text-center ${
-              activeTab === 'workersLog'
-                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-            }`}
+            className={`flex-1 px-3 py-2 text-center ${activeTab === 'workersLog'
+              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+              }`}
           >
             يوميات العمال
           </button>

@@ -14,6 +14,7 @@ import { ProjectWorkersPage } from './pages/ProjectWorkersPage'
 import { ProjectReportsPage } from './pages/ProjectReportsPage'
 import { ProjectTimelinePage } from './pages/ProjectTimelinePage'
 import { ProjectLocationPage } from './pages/ProjectLocationPage'
+import { ProjectSmartFundPage } from './pages/ProjectSmartFundPage'
 import { ClientsPage } from './pages/ClientsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { MainLayout } from './components/layout/MainLayout'
@@ -54,6 +55,7 @@ export default function App() {
             <Route path="projects/:id/workers" element={<ProjectWorkersPage />} />
             <Route path="projects/:id/timeline" element={<ProjectTimelinePage />} />
             <Route path="projects/:id/location" element={<ProjectLocationPage />} />
+            <Route path="projects/:id/fund" element={<ProjectSmartFundPage />} />
             <Route path="clients" element={<ClientsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>

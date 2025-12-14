@@ -7,11 +7,11 @@ const permissionCache = new WeakMap<FileSystemHandle, boolean>()
 
 export async function ensurePermission(handle: FileSystemHandle, mode: 'read' | 'readwrite' = 'readwrite') {
   if (!handle.queryPermission || !handle.requestPermission) return true
-  
+
   // تحقق من الكاش أولاً
   const cached = permissionCache.get(handle)
   if (cached === true) return true
-  
+
   const opts = { mode }
   const status = await handle.queryPermission(opts)
   if (status === 'granted') {
@@ -77,8 +77,8 @@ export async function saveJSONFileHandle<T>(handle: FileSystemFileHandle, data: 
   try {
     await writable.write(JSON.stringify(data, null, 2))
   } finally {
-    // أغلق دون الانتظار للتأكد من الأداء
-    writable.close().catch(() => {})
+    // يجب الانتظار لضمان كتابة البيانات قبل القراءة التالية
+    await writable.close()
   }
 }
 
@@ -154,7 +154,7 @@ export async function readJSONFile(filename: string): Promise<any | null> {
         const fileHandle = await dir.getFileHandle(filename)
         const file = await fileHandle.getFile()
         const text = await file.text()
-        
+
         if (!text.trim()) return null
         return JSON.parse(text)
       } catch (error) {
@@ -191,7 +191,7 @@ export async function saveJSONFile(filename: string, data: any): Promise<void> {
         const writable = await fileHandle.createWritable()
         await writable.write(jsonStr)
         await writable.close()
-        
+
         // Also save to localStorage as backup
         localStorage.setItem(`file:${filename}`, jsonStr)
         return

@@ -38,10 +38,16 @@ export function ProjectReportsPage() {
   const reports = reportsData ?? []
 
   const handleCreate = async () => {
-    if (!date || !progressPercent) return
+    if (!date || !progressPercent) {
+      alert('يرجى تعبئة الحقول المطلوبة (التاريخ، نسبة الإنجاز)')
+      return
+    }
     const progress = Number(progressPercent)
     const workers = workersCount ? Number(workersCount) : undefined
-    if (Number.isNaN(progress)) return
+    if (Number.isNaN(progress)) {
+      alert('نسبة الإنجاز غير صالحة')
+      return
+    }
 
     await createReport({
       projectId: id,
@@ -140,13 +146,39 @@ export function ProjectReportsPage() {
                   <div className="text-xs font-semibold text-slate-900">
                     {new Date(r.date).toLocaleDateString('ar-EG')} - إنجاز {r.progressPercent}%
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setReportToDeleteId(r.id)}
-                    className="text-[10px] text-red-600 hover:text-red-700"
-                  >
-                    حذف
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!project) return
+                        const reportDate = new Date(r.date).toISOString().split('T')[0]
+                        const html = generateDailyReportHTML(
+                          {
+                            project,
+                            reports: reportsData ?? [],
+                            invoices: invoices ?? [],
+                            payments: payments ?? [],
+                            expenses: expenses ?? [],
+                            workers: workers ?? [],
+                            tasks: tasks ?? [],
+                          },
+                          reportDate,
+                          reportDate
+                        )
+                        openReportInWindow(html)
+                      }}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-800 transition-colors"
+                    >
+                      عرض التقرير
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReportToDeleteId(r.id)}
+                      className="px-3 py-1.5 rounded-md text-xs font-medium bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 dark:bg-red-900/40 dark:text-red-300 dark:border-red-800 transition-colors"
+                    >
+                      حذف
+                    </button>
+                  </div>
                 </div>
                 {r.notes && <div className="text-[11px] text-slate-700">ملاحظات: {r.notes}</div>}
                 {r.issues && <div className="text-[11px] text-amber-700">مشكلات: {r.issues}</div>}

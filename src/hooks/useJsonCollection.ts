@@ -8,14 +8,14 @@ async function readFromStorage<T>(key: string, fallback: T): Promise<T> {
     if (stored) {
       return JSON.parse(stored) as T
     }
-  } catch {}
+  } catch { }
   return fallback
 }
 
 async function saveToStorage<T>(key: string, data: T): Promise<void> {
   try {
     localStorage.setItem(`collection:${key}`, JSON.stringify(data))
-  } catch {}
+  } catch { }
 }
 
 export function useJsonCollection<T extends { id: string }>(
@@ -44,7 +44,7 @@ export function useJsonCollection<T extends { id: string }>(
   const mutation = useMutation({
     mutationFn: async (updater: (items: T[]) => T[]) => {
       let current: T[] = []
-      
+
       // حاول القراءة من FileSystem أولاً
       if (handle) {
         try {
@@ -58,9 +58,9 @@ export function useJsonCollection<T extends { id: string }>(
         // استخدم localStorage إذا لم يكن هناك handle
         current = await readFromStorage(key, [])
       }
-      
+
       const next = updater(current)
-      
+
       // حاول الحفظ في FileSystem أولاً
       if (handle) {
         try {
@@ -73,11 +73,11 @@ export function useJsonCollection<T extends { id: string }>(
         // استخدم localStorage إذا لم يكن هناك handle
         await saveToStorage(key, next)
       }
-      
+
       return next
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [key] })
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: [key] })
     },
   })
 
