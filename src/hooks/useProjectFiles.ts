@@ -34,12 +34,12 @@ export function useProjectFiles(projectId?: string) {
     }
 
     await collection.save((items) => [...items, ...metas])
-    await log({ action: 'رفع ملفات', entity: 'file', entityId: pid, details: `عدد الملفات: ${metas.length}` })
+    log({ action: 'رفع ملفات', entity: 'file', entityId: pid, details: `عدد الملفات: ${metas.length}` }).catch(() => {})
   }
 
   const removeFile = async (id: string) => {
     await collection.save((items) => items.filter((f) => f.id !== id))
-    await log({ action: 'حذف ملف', entity: 'file', entityId: id })
+    log({ action: 'حذف ملف', entity: 'file', entityId: id }).catch(() => {})
   }
 
   return {

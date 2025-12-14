@@ -2,14 +2,29 @@ export function isFileSystemAPISupported(): boolean {
   return typeof window !== 'undefined' && !!window.showOpenFilePicker
 }
 
+// كاش لتخزين حالة الأذونات لتجنب استدعاءات متكررة
+const permissionCache = new WeakMap<FileSystemHandle, boolean>()
+
 export async function ensurePermission(handle: FileSystemHandle, mode: 'read' | 'readwrite' = 'readwrite') {
   if (!handle.queryPermission || !handle.requestPermission) return true
+  
+  // تحقق من الكاش أولاً
+  const cached = permissionCache.get(handle)
+  if (cached === true) return true
+  
   const opts = { mode }
   const status = await handle.queryPermission(opts)
-  if (status === 'granted') return true
+  if (status === 'granted') {
+    permissionCache.set(handle, true)
+    return true
+  }
   if (status === 'denied') return false
   const result = await handle.requestPermission(opts)
-  return result === 'granted'
+  const granted = result === 'granted'
+  if (granted) {
+    permissionCache.set(handle, true)
+  }
+  return granted
 }
 
 export async function openJSONFile(): Promise<FileSystemFileHandle | null> {
@@ -59,8 +74,12 @@ export async function saveJSONFileHandle<T>(handle: FileSystemFileHandle, data: 
   const ok = await ensurePermission(handle, 'readwrite')
   if (!ok) throw new Error('Permission denied')
   const writable = await handle.createWritable()
-  await writable.write(JSON.stringify(data, null, 2))
-  await writable.close()
+  try {
+    await writable.write(JSON.stringify(data, null, 2))
+  } finally {
+    // أغلق دون الانتظار للتأكد من الأداء
+    writable.close().catch(() => {})
+  }
 }
 
 export async function openDirectory(): Promise<FileSystemDirectoryHandle | null> {

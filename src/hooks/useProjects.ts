@@ -15,26 +15,32 @@ export function useProjects() {
     const id = createId()
     const now = new Date().toISOString()
     await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-    await log({ action: 'إنشاء مشروع', entity: 'project', entityId: id, details: input.title })
 
-    await notify({
-      type: 'info',
-      message: `تم إنشاء مشروع جديد: ${input.title}`,
-      projectId: id,
-      entity: 'project',
-      entityId: id,
-    })
-
-    if (input.endDate) {
-      await notify({
-        type: 'project_deadline',
-        message: `تاريخ انتهاء مشروع "${input.title}" هو ${new Date(input.endDate).toLocaleDateString('ar-EG')}`,
+    const notifyPromises = [
+      log({ action: 'إنشاء مشروع', entity: 'project', entityId: id, details: input.title }),
+      notify({
+        type: 'info',
+        message: `تم إنشاء مشروع جديد: ${input.title}`,
         projectId: id,
         entity: 'project',
         entityId: id,
-        dueDate: input.endDate,
-      })
+      }),
+    ]
+
+    if (input.endDate) {
+      notifyPromises.push(
+        notify({
+          type: 'project_deadline',
+          message: `تاريخ انتهاء مشروع "${input.title}" هو ${new Date(input.endDate).toLocaleDateString('ar-EG')}`,
+          projectId: id,
+          entity: 'project',
+          entityId: id,
+          dueDate: input.endDate,
+        })
+      )
     }
+
+    await Promise.all(notifyPromises)
   }
 
   const updateProject = async (id: string, patch: Partial<Project>) => {
@@ -45,12 +51,12 @@ export function useProjects() {
       next[idx] = { ...next[idx], ...patch }
       return next
     })
-    await log({ action: 'تحديث مشروع', entity: 'project', entityId: id })
+    log({ action: 'تحديث مشروع', entity: 'project', entityId: id }).catch(() => {})
   }
 
   const deleteProject = async (id: string) => {
     await collection.save((items) => items.filter((p) => p.id !== id))
-    await log({ action: 'حذف مشروع', entity: 'project', entityId: id })
+    log({ action: 'حذف مشروع', entity: 'project', entityId: id }).catch(() => {})
   }
 
   return {

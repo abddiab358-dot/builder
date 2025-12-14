@@ -13,7 +13,7 @@ export function useClients() {
     const id = createId()
     const now = new Date().toISOString()
     await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-    await log({ action: 'إضافة عميل', entity: 'client', entityId: id, details: input.name })
+    log({ action: 'إضافة عميل', entity: 'client', entityId: id, details: input.name }).catch(() => {})
   }
 
   const updateClient = async (id: string, patch: Partial<Client>) => {
@@ -24,12 +24,12 @@ export function useClients() {
       next[idx] = { ...next[idx], ...patch }
       return next
     })
-    await log({ action: 'تحديث عميل', entity: 'client', entityId: id })
+    log({ action: 'تحديث عميل', entity: 'client', entityId: id }).catch(() => {})
   }
 
   const deleteClient = async (id: string) => {
     await collection.save((items) => items.filter((c) => c.id !== id))
-    await log({ action: 'حذف عميل', entity: 'client', entityId: id })
+    log({ action: 'حذف عميل', entity: 'client', entityId: id }).catch(() => {})
   }
 
   return {

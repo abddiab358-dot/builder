@@ -19,12 +19,12 @@ export function useWorkerLogs(projectId?: string) {
     const now = new Date().toISOString()
     const totalCost = input.workersCount * input.hoursPerWorker * input.hourlyRate
     await collection.save((items) => [...items, { ...input, id, createdAt: now, totalCost }])
-    await log({ action: 'تسجيل يومية عمال', entity: 'workerLog', entityId: id })
+    log({ action: 'تسجيل يومية عمال', entity: 'workerLog', entityId: id }).catch(() => {})
   }
 
   const deleteLog = async (id: string) => {
     await collection.save((items) => items.filter((e) => e.id !== id))
-    await log({ action: 'حذف يومية عمال', entity: 'workerLog', entityId: id })
+    log({ action: 'حذف يومية عمال', entity: 'workerLog', entityId: id }).catch(() => {})
   }
 
   return {

@@ -41,18 +41,23 @@ export function useInvoices(projectId?: string) {
         paidAmount: 0,
       },
     ])
-    await log({ action: 'إنشاء فاتورة', entity: 'invoice', entityId: id, details: input.number })
+
+    const promises = [log({ action: 'إنشاء فاتورة', entity: 'invoice', entityId: id, details: input.number })]
 
     if (input.dueDate) {
-      await notify({
-        type: 'payment_due',
-        message: `فاتورة رقم ${input.number} تستحق في ${new Date(input.dueDate).toLocaleDateString('ar-EG')}`,
-        projectId: input.projectId,
-        entity: 'invoice',
-        entityId: id,
-        dueDate: input.dueDate,
-      })
+      promises.push(
+        notify({
+          type: 'payment_due',
+          message: `فاتورة رقم ${input.number} تستحق في ${new Date(input.dueDate).toLocaleDateString('ar-EG')}`,
+          projectId: input.projectId,
+          entity: 'invoice',
+          entityId: id,
+          dueDate: input.dueDate,
+        })
+      )
     }
+
+    await Promise.all(promises)
   }
 
   const updateInvoice = async (id: string, patch: Partial<Invoice>) => {
@@ -70,12 +75,12 @@ export function useInvoices(projectId?: string) {
       next[idx] = merged
       return next
     })
-    await log({ action: 'تحديث فاتورة', entity: 'invoice', entityId: id })
+    log({ action: 'تحديث فاتورة', entity: 'invoice', entityId: id }).catch(() => {})
   }
 
   const deleteInvoice = async (id: string) => {
     await collection.save((items) => items.filter((inv) => inv.id !== id))
-    await log({ action: 'حذف فاتورة', entity: 'invoice', entityId: id })
+    log({ action: 'حذف فاتورة', entity: 'invoice', entityId: id }).catch(() => {})
   }
 
   return {

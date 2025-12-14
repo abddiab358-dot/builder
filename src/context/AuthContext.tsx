@@ -1,3 +1,9 @@
+import { createContext, useContext, useState, useEffect } from 'react'
+import { PermissionUser } from '../types/domain'
+import { readJSONFile, saveJSONFile } from '../storage/fileSystem'
+import { getSavedDirectoryHandle } from '../storage/handleStore'
+import { hashPassword, verifyPassword } from '../utils/password'
+
 // في-memory fallback for mobile devices
 let inMemoryStorage: Record<string, string> = {}
 

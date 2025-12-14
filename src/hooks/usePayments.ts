@@ -20,21 +20,23 @@ export function usePayments(projectId?: string) {
     const id = createId()
     const now = new Date().toISOString()
     await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-    await log({ action: 'تسجيل دفعة', entity: 'payment', entityId: id, details: `${input.amount}` })
 
-    await notify({
-      type: 'info',
-      message: `تم تسجيل دفعة بقيمة ${input.amount.toLocaleString('ar-EG')} للمشروع`,
-      projectId: input.projectId,
-      entity: 'payment',
-      entityId: id,
-      dueDate: input.date,
-    })
+    await Promise.all([
+      log({ action: 'تسجيل دفعة', entity: 'payment', entityId: id, details: `${input.amount}` }),
+      notify({
+        type: 'info',
+        message: `تم تسجيل دفعة بقيمة ${input.amount.toLocaleString('ar-EG')} للمشروع`,
+        projectId: input.projectId,
+        entity: 'payment',
+        entityId: id,
+        dueDate: input.date,
+      }),
+    ])
   }
 
   const deletePayment = async (id: string) => {
     await collection.save((items) => items.filter((p) => p.id !== id))
-    await log({ action: 'حذف دفعة', entity: 'payment', entityId: id })
+    log({ action: 'حذف دفعة', entity: 'payment', entityId: id }).catch(() => {})
   }
 
   return {

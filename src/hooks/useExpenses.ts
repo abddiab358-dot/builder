@@ -18,12 +18,12 @@ export function useExpenses(projectId?: string) {
     const id = createId()
     const now = new Date().toISOString()
     await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-    await log({ action: 'تسجيل مصروف', entity: 'expense', entityId: id, details: input.label })
+    log({ action: 'تسجيل مصروف', entity: 'expense', entityId: id, details: input.label }).catch(() => {})
   }
 
   const deleteExpense = async (id: string) => {
     await collection.save((items) => items.filter((e) => e.id !== id))
-    await log({ action: 'حذف مصروف', entity: 'expense', entityId: id })
+    log({ action: 'حذف مصروف', entity: 'expense', entityId: id }).catch(() => {})
   }
 
   return {

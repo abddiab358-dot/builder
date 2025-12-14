@@ -18,7 +18,7 @@ export function useWorkers(projectId?: string) {
     const id = createId()
     const now = new Date().toISOString()
     await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-    await log({ action: 'إضافة عامل', entity: 'worker', entityId: id, details: input.name })
+    log({ action: 'إضافة عامل', entity: 'worker', entityId: id, details: input.name }).catch(() => {})
   }
 
   const updateWorker = async (id: string, patch: Partial<Worker>) => {
@@ -29,12 +29,12 @@ export function useWorkers(projectId?: string) {
       next[idx] = { ...next[idx], ...patch }
       return next
     })
-    await log({ action: 'تحديث عامل', entity: 'worker', entityId: id })
+    log({ action: 'تحديث عامل', entity: 'worker', entityId: id }).catch(() => {})
   }
 
   const deleteWorker = async (id: string) => {
     await collection.save((items) => items.filter((w) => w.id !== id))
-    await log({ action: 'حذف عامل', entity: 'worker', entityId: id })
+    log({ action: 'حذف عامل', entity: 'worker', entityId: id }).catch(() => {})
   }
 
   return {

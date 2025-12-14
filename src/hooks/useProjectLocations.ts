@@ -27,11 +27,11 @@ export function useProjectLocations(projectId?: string) {
         next[idx] = { ...next[idx], ...input }
         return next
       })
-      await log({ action: 'تحديث موقع مشروع', entity: 'project', entityId: input.projectId })
+      log({ action: 'تحديث موقع مشروع', entity: 'project', entityId: input.projectId }).catch(() => {})
     } else {
       const id = createId()
       await collection.save((items) => [...items, { ...input, id, createdAt: now }])
-      await log({ action: 'تحديد موقع مشروع', entity: 'project', entityId: input.projectId })
+      log({ action: 'تحديد موقع مشروع', entity: 'project', entityId: input.projectId }).catch(() => {})
     }
   }
 
