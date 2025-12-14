@@ -49,9 +49,8 @@ export function ProjectFinancePage() {
 
   const [workerLogModalOpen, setWorkerLogModalOpen] = useState(false)
   const [logDate, setLogDate] = useState('')
-  const [logWorkersCount, setLogWorkersCount] = useState('')
-  const [logHoursPerWorker, setLogHoursPerWorker] = useState('')
-  const [logHourlyRate, setLogHourlyRate] = useState('')
+  const [logWorkerId, setLogWorkerId] = useState('')
+  const [logWorkersCount, setLogWorkersCount] = useState('1')
 
   if (!id) return null
 
@@ -73,33 +72,37 @@ export function ProjectFinancePage() {
     const baseAmount = Number(invoiceAmount)
     if (!baseAmount || Number.isNaN(baseAmount)) return
 
-    const item: InvoiceItem = {
-      id: createId(),
-      description: invoiceDescription.trim() || 'بنود الفاتورة',
-      quantity: 1,
-      unitPrice: baseAmount,
-      total: baseAmount,
+    try {
+      const item: InvoiceItem = {
+        id: createId(),
+        description: invoiceDescription.trim() || 'بنود الفاتورة',
+        quantity: 1,
+        unitPrice: baseAmount,
+        total: baseAmount,
+      }
+
+      await invoicesState.createInvoice({
+        projectId: id,
+        number: invoiceNumber.trim(),
+        date: invoiceDate,
+        dueDate: invoiceDueDate || undefined,
+        items: [item],
+        taxRate: undefined,
+        notes: invoiceDescription.trim() || undefined,
+        logoFileId: undefined,
+        imageFileId: invoiceImageFileId || undefined,
+      } as any)
+
+      setInvoiceNumber('')
+      setInvoiceDate('')
+      setInvoiceDueDate('')
+      setInvoiceAmount('')
+      setInvoiceImageFileId('')
+      setInvoiceDescription('')
+      setInvoiceModalOpen(false)
+    } catch (error) {
+      console.error('خطأ في إنشاء الفاتورة:', error)
     }
-
-    await invoicesState.createInvoice({
-      projectId: id,
-      number: invoiceNumber.trim(),
-      date: invoiceDate,
-      dueDate: invoiceDueDate || undefined,
-      items: [item],
-      taxRate: undefined,
-      notes: invoiceDescription.trim() || undefined,
-      logoFileId: undefined,
-      imageFileId: invoiceImageFileId || undefined,
-    } as any)
-
-    setInvoiceNumber('')
-    setInvoiceDate('')
-    setInvoiceDueDate('')
-    setInvoiceAmount('')
-    setInvoiceImageFileId('')
-    setInvoiceDescription('')
-    setInvoiceModalOpen(false)
   }
 
   const handleCreatePayment = async () => {
@@ -107,22 +110,26 @@ export function ProjectFinancePage() {
     const amount = Number(paymentAmount)
     if (!amount || Number.isNaN(amount)) return
 
-    await paymentsState.createPayment({
-      projectId: id,
-      invoiceId: paymentInvoiceId || undefined,
-      workerId: paymentWorkerId || undefined,
-      date: paymentDate,
-      amount,
-      method: paymentMethod || undefined,
-      notes: undefined,
-    } as any)
+    try {
+      await paymentsState.createPayment({
+        projectId: id,
+        invoiceId: paymentInvoiceId || undefined,
+        workerId: paymentWorkerId || undefined,
+        date: paymentDate,
+        amount,
+        method: paymentMethod || undefined,
+        notes: undefined,
+      } as any)
 
-    setPaymentDate('')
-    setPaymentAmount('')
-    setPaymentInvoiceId('')
-    setPaymentWorkerId('')
-    setPaymentMethod('')
-    setPaymentModalOpen(false)
+      setPaymentDate('')
+      setPaymentAmount('')
+      setPaymentInvoiceId('')
+      setPaymentWorkerId('')
+      setPaymentMethod('')
+      setPaymentModalOpen(false)
+    } catch (error) {
+      console.error('خطأ في إنشاء الدفعة:', error)
+    }
   }
 
   const handleCreateExpense = async () => {
@@ -130,47 +137,57 @@ export function ProjectFinancePage() {
     const amount = Number(expenseAmount)
     if (!amount || Number.isNaN(amount)) return
 
-    await expensesState.createExpense({
-      projectId: id,
-      category: expenseCategory,
-      label: expenseLabel.trim(),
-      amount,
-      date: expenseDate,
-      workerId: expenseWorkerId || undefined,
-      dailyRate: expenseDailyRate ? Number(expenseDailyRate) : undefined,
-      notes: undefined,
-    } as any)
+    try {
+      await expensesState.createExpense({
+        projectId: id,
+        category: expenseCategory,
+        label: expenseLabel.trim(),
+        amount,
+        date: expenseDate,
+        workerId: expenseWorkerId || undefined,
+        dailyRate: expenseDailyRate ? Number(expenseDailyRate) : undefined,
+        notes: undefined,
+      } as any)
 
-    setExpenseLabel('')
-    setExpenseAmount('')
-    setExpenseDate('')
-    setExpenseCategory('materials')
-    setExpenseWorkerId('')
-    setExpenseDailyRate('')
-    setExpenseModalOpen(false)
+      setExpenseLabel('')
+      setExpenseAmount('')
+      setExpenseDate('')
+      setExpenseCategory('materials')
+      setExpenseWorkerId('')
+      setExpenseDailyRate('')
+      setExpenseModalOpen(false)
+    } catch (error) {
+      console.error('خطأ في إنشاء المصروف:', error)
+    }
   }
 
   const handleCreateWorkerLog = async () => {
-    if (!logDate || !logWorkersCount || !logHoursPerWorker || !logHourlyRate) return
+    if (!logDate || !logWorkerId || !logWorkersCount) return
     const workersCount = Number(logWorkersCount)
-    const hours = Number(logHoursPerWorker)
-    const rate = Number(logHourlyRate)
-    if ([workersCount, hours, rate].some((v) => !v || Number.isNaN(v))) return
+    if (!workersCount || Number.isNaN(workersCount)) return
 
-    await workerLogsState.createLog({
-      projectId: id,
-      date: logDate,
-      workersCount,
-      hoursPerWorker: hours,
-      hourlyRate: rate,
-      notes: undefined,
-    } as any)
+    try {
+      const selectedWorker = (workersState.data ?? []).find((w) => w.id === logWorkerId)
+      if (!selectedWorker) return
 
-    setLogDate('')
-    setLogWorkersCount('')
-    setLogHoursPerWorker('')
-    setLogHourlyRate('')
-    setWorkerLogModalOpen(false)
+      await expensesState.createExpense({
+        projectId: id,
+        category: 'worker_daily',
+        label: selectedWorker.name,
+        amount: (selectedWorker.dailyRate || 0) * workersCount,
+        date: logDate,
+        workerId: logWorkerId,
+        dailyRate: selectedWorker.dailyRate,
+        notes: `عدد العمال: ${workersCount}`,
+      } as any)
+
+      setLogDate('')
+      setLogWorkerId('')
+      setLogWorkersCount('1')
+      setWorkerLogModalOpen(false)
+    } catch (error) {
+      console.error('خطأ في إنشاء يومية العمال:', error)
+    }
   }
 
   return (
@@ -396,7 +413,7 @@ export function ProjectFinancePage() {
                   onClick={() => setWorkerLogModalOpen(true)}
                   className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
                 >
-                  تسجيل يومية عمال
+                  تسجيل يومية عامل
                 </button>
               </div>
               {workerLogs.length === 0 && <div>لا توجد سجلات يومية حتى الآن.</div>}
@@ -406,21 +423,22 @@ export function ProjectFinancePage() {
                     <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 font-medium">التاريخ</th>
+                        <th className="px-2 py-1 font-medium">اسم العامل</th>
                         <th className="px-2 py-1 font-medium">عدد العمال</th>
-                        <th className="px-2 py-1 font-medium">الساعات للعامل</th>
-                        <th className="px-2 py-1 font-medium">تكلفة الساعة</th>
-                        <th className="px-2 py-1 font-medium">إجمالي التكلفة</th>
+                        <th className="px-2 py-1 font-medium">يومية الواحد</th>
+                        <th className="px-2 py-1 font-medium">الإجمالي</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {workerLogs.map((l) => (
-                        <tr key={l.id} className="border-t border-slate-100 dark:border-slate-700">
+                      {(expenses.filter((e) => e.category === 'worker_daily') || []).map((e) => (
+                        <tr key={e.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
-                            {l.date && new Date(l.date).toLocaleDateString('ar-EG')}
+                            {e.date && new Date(e.date).toLocaleDateString('ar-EG')}
                           </td>
-                          <td className="px-2 py-1">{l.workersCount}</td>
-                          <td className="px-2 py-1">{l.hoursPerWorker}</td>
-                          <td className="px-2 py-1">{l.hourlyRate.toLocaleString('ar-EG')} ليرة سورية</td>
+                          <td className="px-2 py-1">{e.label}</td>
+                          <td className="px-2 py-1">{e.notes ? e.notes.split(': ')[1] : '-'}</td>
+                          <td className="px-2 py-1">{e.dailyRate?.toLocaleString('ar-EG') || '-'} ليرة سورية</td>
+                          <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                           <td className="px-2 py-1">{l.totalCost.toLocaleString('ar-EG')} ليرة سورية</td>
                         </tr>
                       ))}
@@ -718,7 +736,7 @@ export function ProjectFinancePage() {
       <Modal
         open={workerLogModalOpen}
         onClose={() => setWorkerLogModalOpen(false)}
-        title="تسجيل يومية عمال"
+        title="تسجيل يومية عامل"
         footer={
           <div className="flex justify-between w-full">
             <button
@@ -750,33 +768,40 @@ export function ProjectFinancePage() {
               />
             </div>
             <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">اختر العامل</label>
+              <select
+                className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logWorkerId}
+                onChange={(e) => setLogWorkerId(e.target.value)}
+              >
+                <option value="">اختر عاملاً</option>
+                {(workersState.data ?? []).map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name} - {w.dailyRate || 0} ليرة سورية/يوم
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
               <label className="text-[11px] text-slate-600">عدد العمال</label>
               <input
                 type="number"
+                min="1"
                 className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={logWorkersCount}
                 onChange={(e) => setLogWorkersCount(e.target.value)}
               />
             </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-slate-600">الساعات لكل عامل</label>
-              <input
-                type="number"
-                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={logHoursPerWorker}
-                onChange={(e) => setLogHoursPerWorker(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-slate-600">تكلفة الساعة</label>
-              <input
-                type="number"
-                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={logHourlyRate}
-                onChange={(e) => setLogHourlyRate(e.target.value)}
-              />
-            </div>
           </div>
+          {logWorkerId && (
+            <div className="bg-primary-50 dark:bg-primary-900 border border-primary-200 dark:border-primary-700 rounded-md p-3 text-xs">
+              <div className="text-primary-900 dark:text-primary-100">
+                <div>العامل: <span className="font-semibold">{(workersState.data ?? []).find((w) => w.id === logWorkerId)?.name}</span></div>
+                <div>يومية واحدة: <span className="font-semibold">{(workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0} ليرة سورية</span></div>
+                <div>الإجمالي: <span className="font-semibold">{((workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0) * Number(logWorkersCount || 0)} ليرة سورية</span></div>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
     </div>
