@@ -49,16 +49,16 @@ export function ProjectTasksPage() {
         <BackButton fallbackPath={`/projects/${id}`} />
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-3 space-y-3">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 space-y-3">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
           <input
             placeholder="عنوان المهمة"
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <select
-            className="border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
           >
@@ -71,7 +71,7 @@ export function ProjectTasksPage() {
           </select>
           <input
             type="date"
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
           />

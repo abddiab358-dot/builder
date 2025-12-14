@@ -46,8 +46,8 @@ export function ProjectTimelinePage() {
       </div>
 
       {tasksWithDates.length > 0 && minDate && maxDate && (
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3">
-          <div className="flex items-center justify-between text-xs text-slate-600 mb-2">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3">
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 mb-2">
             <div>
               من: {minDate.toLocaleDateString('ar-EG')} — إلى: {maxDate.toLocaleDateString('ar-EG')}
             </div>
@@ -63,12 +63,12 @@ export function ProjectTimelinePage() {
               return (
                 <div key={t.id} className="space-y-1 text-xs">
                   <div className="flex items-center justify-between gap-2">
-                    <div className="font-medium text-slate-900 truncate">{t.title}</div>
-                    <div className="text-slate-500">
+                    <div className="font-medium text-slate-900 dark:text-slate-50 truncate">{t.title}</div>
+                    <div className="text-slate-500 dark:text-slate-400">
                       {d.toLocaleDateString('ar-EG')}
                     </div>
                   </div>
-                  <div className="relative w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                  <div className="relative w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
                     <div
                       className="absolute inset-y-0 bg-primary-500/80"
                       style={{ right: `${offset}%`, width: `${width}%` }}
@@ -81,9 +81,9 @@ export function ProjectTimelinePage() {
         </div>
       )}
 
-      <div className="bg-white rounded-lg border border-slate-200 p-4 text-xs space-y-2">
-        <div className="text-sm font-semibold text-slate-900 mb-1">ملاحظات حول استخدام المخطط الزمني</div>
-        <ul className="list-disc list-inside space-y-1 text-slate-600">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 text-xs space-y-2">
+        <div className="text-sm font-semibold text-slate-900 dark:text-slate-50 mb-1">ملاحظات حول استخدام المخطط الزمني</div>
+        <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
           <li>يتم الاعتماد على تاريخ الاستحقاق لكل مهمة لرسم موضعها على الخط الزمني.</li>
           <li>المهام بدون تاريخ استحقاق لا تظهر في هذا المخطط ويمكن إدارتها من صفحة "مهام المشروع".</li>
           <li>هذا العرض مبسط ليساعدك على رؤية تكدّس المواعيد خلال فترة التنفيذ.</li>

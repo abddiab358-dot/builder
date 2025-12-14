@@ -71,30 +71,30 @@ export function ProjectReportsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <div className="bg-white rounded-lg border border-slate-200 p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">عدد التقارير</div>
-          <div className="text-base font-semibold text-slate-900">{reports.length}</div>
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">عدد التقارير</div>
+          <div className="text-base font-semibold text-slate-900 dark:text-slate-50">{reports.length}</div>
         </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">آخر نسبة إنجاز مسجلة</div>
-          <div className="text-base font-semibold text-emerald-700">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">آخر نسبة إنجاز مسجلة</div>
+          <div className="text-base font-semibold text-emerald-700 dark:text-emerald-400">
             {latestReport ? `${latestReport.progressPercent}%` : '--'}
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-slate-200 p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">عدد الصور المرفوعة للمشروع</div>
-          <div className="text-base font-semibold text-slate-900">{imagesCount}</div>
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">عدد الصور المرفوعة للمشروع</div>
+          <div className="text-base font-semibold text-slate-900 dark:text-slate-50">{imagesCount}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-slate-200 p-3 text-xs space-y-2">
+      <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-3 text-xs space-y-2">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-sm font-semibold text-slate-900">سجل التقارير اليومية</div>
-          <div className="text-[11px] text-slate-500">
+          <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">سجل التقارير اليومية</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             يمكنك رفع صور اليوم من صفحة "الملفات والصور" وذكرها في ملاحظات التقرير.
           </div>
         </div>
-        {reports.length === 0 && <div className="text-xs text-slate-500">لا توجد تقارير حتى الآن.</div>}
+        {reports.length === 0 && <div className="text-xs text-slate-500 dark:text-slate-400">لا توجد تقارير حتى الآن.</div>}
         <div className="space-y-2">
           {reports
             .slice()

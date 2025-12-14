@@ -50,34 +50,34 @@ export function ProjectForm({ initial, onSubmit, submitLabel }: Props) {
     <form onSubmit={handleSubmit} className="space-y-4 text-right">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">اسم المشروع</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">اسم المشروع</label>
           <input
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">اسم العميل</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">اسم العميل</label>
           <input
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={clientName}
             onChange={(e) => setClientName(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">الموقع / العنوان</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">الموقع / العنوان</label>
           <input
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={address}
             onChange={(e) => setAddress(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">حالة المشروع</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">حالة المشروع</label>
           <select
-            className="border rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={status}
             onChange={(e) => setStatus(e.target.value as ProjectStatus)}
           >
@@ -89,39 +89,39 @@ export function ProjectForm({ initial, onSubmit, submitLabel }: Props) {
           </select>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">تاريخ البدء</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">تاريخ البدء</label>
           <input
             type="date"
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">تاريخ الانتهاء (اختياري)</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">تاريخ الانتهاء (اختياري)</label>
           <input
             type="date"
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium text-slate-700">الميزانية التقديرية</label>
+          <label className="text-xs font-medium text-slate-700 dark:text-slate-300">الميزانية التقديرية</label>
           <input
             type="number"
             min={0}
-            className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             value={budget}
             onChange={(e) => setBudget(e.target.value)}
           />
         </div>
       </div>
       <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-slate-700">ملاحظات</label>
+        <label className="text-xs font-medium text-slate-700 dark:text-slate-300">ملاحظات</label>
         <textarea
           rows={3}
-          className="border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-2 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
         />
@@ -130,7 +130,7 @@ export function ProjectForm({ initial, onSubmit, submitLabel }: Props) {
         <button
           type="submit"
           disabled={submitting}
-          className="px-4 py-2 rounded-md text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:bg-slate-300"
+          className="px-4 py-2 rounded-md text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 disabled:bg-slate-300 dark:disabled:bg-slate-700"
         >
           {submitLabel}
         </button>

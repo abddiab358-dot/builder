@@ -134,39 +134,39 @@ export function ProjectLocationPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg border border-slate-200 p-4 space-y-3 text-xs">
+        <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 p-4 space-y-3 text-xs">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-600">خط العرض (Latitude)</label>
+            <label className="text-[11px] text-slate-600 dark:text-slate-400">خط العرض (Latitude)</label>
             <input
-              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               value={lat}
               onChange={(e) => setLat(e.target.value)}
               placeholder="مثال: 24.7136"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-600">خط الطول (Longitude)</label>
+            <label className="text-[11px] text-slate-600 dark:text-slate-400">خط الطول (Longitude)</label>
             <input
-              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               value={lng}
               onChange={(e) => setLng(e.target.value)}
               placeholder="مثال: 46.6753"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-600">عنوان الموقع (اختياري)</label>
+            <label className="text-[11px] text-slate-600 dark:text-slate-400">عنوان الموقع (اختياري)</label>
             <textarea
               rows={3}
-              className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="وصف مختصر لموقع المشروع أو أقرب معلم."
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-600">اختيار صورة تمثيلية للموقع (اختياري)</label>
+            <label className="text-[11px] text-slate-600 dark:text-slate-400">اختيار صورة تمثيلية للموقع (اختياري)</label>
             <select
-              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="border border-slate-300 dark:border-slate-600 rounded-md px-3 py-1.5 text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
               value={snapshotFileId}
               onChange={(e) => setSnapshotFileId(e.target.value)}
             >
