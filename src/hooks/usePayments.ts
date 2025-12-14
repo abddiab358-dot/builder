@@ -39,9 +39,21 @@ export function usePayments(projectId?: string) {
     log({ action: 'حذف دفعة', entity: 'payment', entityId: id }).catch(() => {})
   }
 
+  const updatePayment = async (id: string, patch: Partial<Payment>) => {
+    await collection.save((items) => {
+      const idx = items.findIndex((p) => p.id === id)
+      if (idx === -1) return items
+      const next = [...items]
+      next[idx] = { ...next[idx], ...patch }
+      return next
+    })
+    log({ action: 'تحديث دفعة', entity: 'payment', entityId: id }).catch(() => {})
+  }
+
   return {
     ...filtered,
     createPayment,
     deletePayment,
+    updatePayment,
   }
 }

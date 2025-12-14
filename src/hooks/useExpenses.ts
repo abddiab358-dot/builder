@@ -26,9 +26,21 @@ export function useExpenses(projectId?: string) {
     log({ action: 'حذف مصروف', entity: 'expense', entityId: id }).catch(() => {})
   }
 
+  const updateExpense = async (id: string, patch: Partial<Expense>) => {
+    await collection.save((items) => {
+      const idx = items.findIndex((e) => e.id === id)
+      if (idx === -1) return items
+      const next = [...items]
+      next[idx] = { ...next[idx], ...patch }
+      return next
+    })
+    log({ action: 'تحديث مصروف', entity: 'expense', entityId: id }).catch(() => {})
+  }
+
   return {
     ...filtered,
     createExpense,
     deleteExpense,
+    updateExpense,
   }
 }

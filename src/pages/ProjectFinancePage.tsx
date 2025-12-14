@@ -235,22 +235,34 @@ export function ProjectFinancePage() {
     try {
       if (editingItem.type === 'invoice') {
         // تحديث الفاتورة
-        await invoicesState.createInvoice({
-          ...editingItem.data,
-          projectId: id,
-        } as any)
+        await invoicesState.updateInvoice(editingItem.id, editingItem.data)
       } else if (editingItem.type === 'payment') {
-        // تحديث الدفعة
-        await paymentsState.createPayment({
-          ...editingItem.data,
-          projectId: id,
-        } as any)
+        // تحديث الدفعة - نحتاج للتحقق من وجود updatePayment
+        const paymentHooks = paymentsState as any
+        if (paymentHooks.updatePayment) {
+          await paymentHooks.updatePayment(editingItem.id, editingItem.data)
+        } else {
+          // إذا لم تكن موجودة، سيكون لدينا خطأ
+          console.warn('updatePayment not available, deleting and recreating')
+          await paymentsState.deletePayment(editingItem.id)
+          await paymentsState.createPayment({
+            ...editingItem.data,
+            projectId: id,
+          } as any)
+        }
       } else if (editingItem.type === 'expense') {
         // تحديث المصروف
-        await expensesState.createExpense({
-          ...editingItem.data,
-          projectId: id,
-        } as any)
+        const expenseHooks = expensesState as any
+        if (expenseHooks.updateExpense) {
+          await expenseHooks.updateExpense(editingItem.id, editingItem.data)
+        } else {
+          console.warn('updateExpense not available, deleting and recreating')
+          await expensesState.deleteExpense(editingItem.id)
+          await expensesState.createExpense({
+            ...editingItem.data,
+            projectId: id,
+          } as any)
+        }
       }
       setEditModalOpen(false)
       setEditingItem(null)
@@ -924,6 +936,142 @@ export function ProjectFinancePage() {
             </div>
           )}
         </div>
+      </Modal>
+
+      <Modal
+        open={editModalOpen}
+        onClose={() => {
+          setEditModalOpen(false)
+          setEditingItem(null)
+        }}
+        title="تعديل البيانات"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => {
+                setEditModalOpen(false)
+                setEditingItem(null)
+              }}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveEdit}
+              className="px-3 py-1.5 rounded-md text-xs bg-primary-600 text-white hover:bg-primary-700"
+            >
+              حفظ التعديلات
+            </button>
+          </div>
+        }
+      >
+        {editingItem && editingItem.type === 'invoice' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">رقم الفاتورة</label>
+                <input
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.number || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, number: e.target.value } })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">تاريخ الفاتورة</label>
+                <input
+                  type="date"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.date || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">تاريخ الاستحقاق</label>
+                <input
+                  type="date"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.dueDate || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, dueDate: e.target.value } })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">الإجمالي</label>
+                <input
+                  type="number"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.total || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, total: Number(e.target.value) } })}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+        {editingItem && editingItem.type === 'payment' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">التاريخ</label>
+                <input
+                  type="date"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.date || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">المبلغ</label>
+                <input
+                  type="number"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.amount || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, amount: Number(e.target.value) } })}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">طريقة الدفع</label>
+              <input
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={editingItem.data.method || ''}
+                onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, method: e.target.value } })}
+              />
+            </div>
+          </div>
+        )}
+        {editingItem && editingItem.type === 'expense' && (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">التاريخ</label>
+                <input
+                  type="date"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.date || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, date: e.target.value } })}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">المبلغ</label>
+                <input
+                  type="number"
+                  className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={editingItem.data.amount || ''}
+                  onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, amount: Number(e.target.value) } })}
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">الوصف</label>
+              <input
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={editingItem.data.label || ''}
+                onChange={(e) => setEditingItem({ ...editingItem, data: { ...editingItem.data, label: e.target.value } })}
+              />
+            </div>
+          </div>
+        )}
       </Modal>
 
       <Modal
