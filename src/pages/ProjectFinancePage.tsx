@@ -5,6 +5,7 @@ import { useInvoices } from '../hooks/useInvoices'
 import { usePayments } from '../hooks/usePayments'
 import { useExpenses } from '../hooks/useExpenses'
 import { useWorkerLogs } from '../hooks/useWorkerLogs'
+import { useProjectFiles } from '../hooks/useProjectFiles'
 import { Modal } from '../components/ui/Modal'
 import { BackButton } from '../components/ui/BackButton'
 import { InvoiceItem, ExpenseCategory } from '../types/domain'
@@ -17,6 +18,7 @@ export function ProjectFinancePage() {
   const paymentsState = usePayments(id)
   const expensesState = useExpenses(id)
   const workerLogsState = useWorkerLogs(id)
+  const filesState = useProjectFiles(id)
 
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'expenses' | 'workersLog'>('invoices')
 
@@ -482,13 +484,28 @@ export function ProjectFinancePage() {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-slate-600">صورة الفاتورة (اختياري)</label>
-            <select
-              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-              value={invoiceImageFileId}
-              onChange={(e) => setInvoiceImageFileId(e.target.value)}
-            >
-              <option value="">بدون صورة</option>
-            </select>
+            <input
+              type="file"
+              accept="image/*"
+              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-primary-600 file:text-white hover:file:bg-primary-700"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (file) {
+                  try {
+                    await filesState.addFiles([file], id)
+                    const uploadedFiles = filesState.data?.filter((f) => f.mimeType.startsWith('image/'))
+                    if (uploadedFiles && uploadedFiles.length > 0) {
+                      setInvoiceImageFileId(uploadedFiles[uploadedFiles.length - 1].id)
+                    }
+                  } catch (error) {
+                    console.error('خطأ في رفع الصورة:', error)
+                  }
+                }
+              }}
+            />
+            {invoiceImageFileId && (
+              <div className="text-xs text-emerald-600 dark:text-emerald-400">✓ تم اختيار الصورة</div>
+            )}
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-slate-600">وصف البنود / ملاحظات</label>
