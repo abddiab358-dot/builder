@@ -25,7 +25,7 @@ export function ProjectFinancePage() {
   const [invoiceDate, setInvoiceDate] = useState('')
   const [invoiceDueDate, setInvoiceDueDate] = useState('')
   const [invoiceAmount, setInvoiceAmount] = useState('')
-  const [invoiceTaxRate, setInvoiceTaxRate] = useState('')
+  const [invoiceImageFileId, setInvoiceImageFileId] = useState('')
   const [invoiceDescription, setInvoiceDescription] = useState('')
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
@@ -80,16 +80,17 @@ export function ProjectFinancePage() {
       date: invoiceDate,
       dueDate: invoiceDueDate || undefined,
       items: [item],
-      taxRate: invoiceTaxRate ? Number(invoiceTaxRate) : undefined,
+      taxRate: undefined,
       notes: invoiceDescription.trim() || undefined,
       logoFileId: undefined,
+      imageFileId: invoiceImageFileId || undefined,
     } as any)
 
     setInvoiceNumber('')
     setInvoiceDate('')
     setInvoiceDueDate('')
     setInvoiceAmount('')
-    setInvoiceTaxRate('')
+    setInvoiceImageFileId('')
     setInvoiceDescription('')
     setInvoiceModalOpen(false)
   }
@@ -169,35 +170,35 @@ export function ProjectFinancePage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">إجمالي الفواتير</div>
-          <div className="text-base font-semibold text-slate-900">{totalInvoices.toLocaleString('ar-EG')}</div>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">إجمالي الفواتير</div>
+          <div className="text-base font-semibold text-slate-900 dark:text-slate-50">{totalInvoices.toLocaleString('ar-EG')} ليرة سورية</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">إجمالي الدفعات المستلمة</div>
-          <div className="text-base font-semibold text-emerald-700">{totalPayments.toLocaleString('ar-EG')}</div>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">إجمالي الدفعات المستلمة</div>
+          <div className="text-base font-semibold text-emerald-700 dark:text-emerald-400">{totalPayments.toLocaleString('ar-EG')} ليرة سورية</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">المتبقي على العميل</div>
-          <div className="text-base font-semibold text-amber-700">{remaining.toLocaleString('ar-EG')}</div>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">المتبقي على العميل</div>
+          <div className="text-base font-semibold text-amber-700 dark:text-amber-400">{remaining.toLocaleString('ar-EG')} ليرة سورية</div>
         </div>
-        <div className="bg-white border border-slate-200 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500">إجمالي التكاليف (مصاريف + عمال)</div>
-          <div className="text-base font-semibold text-slate-900">
-            {(totalExpenses + totalLabor).toLocaleString('ar-EG')}
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+          <div className="text-slate-500 dark:text-slate-400">إجمالي التكاليف (مصاريف + عمال)</div>
+          <div className="text-base font-semibold text-slate-900 dark:text-slate-50">
+            {(totalExpenses + totalLabor).toLocaleString('ar-EG')} ليرة سورية
           </div>
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-lg">
-        <div className="border-b border-slate-200 flex text-sm">
+      <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+        <div className="border-b border-slate-200 dark:border-slate-700 flex text-sm">
           <button
             type="button"
             onClick={() => setActiveTab('invoices')}
             className={`flex-1 px-3 py-2 text-center ${
               activeTab === 'invoices'
-                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             الفواتير
@@ -207,8 +208,8 @@ export function ProjectFinancePage() {
             onClick={() => setActiveTab('payments')}
             className={`flex-1 px-3 py-2 text-center ${
               activeTab === 'payments'
-                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             الدفعات
@@ -218,8 +219,8 @@ export function ProjectFinancePage() {
             onClick={() => setActiveTab('expenses')}
             className={`flex-1 px-3 py-2 text-center ${
               activeTab === 'expenses'
-                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             المصاريف
@@ -229,19 +230,19 @@ export function ProjectFinancePage() {
             onClick={() => setActiveTab('workersLog')}
             className={`flex-1 px-3 py-2 text-center ${
               activeTab === 'workersLog'
-                ? 'bg-primary-50 text-primary-700 border-b-2 border-primary-500'
-                : 'text-slate-600 hover:bg-slate-50'
+                ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
             }`}
           >
             يوميات العمال
           </button>
         </div>
 
-        <div className="p-4 space-y-3 text-xs text-slate-700">
+        <div className="p-4 space-y-3 text-xs text-slate-700 dark:text-slate-300">
           {activeTab === 'invoices' && (
             <>
               <div className="flex justify-between items-center mb-2">
-                <div className="text-sm font-semibold text-slate-900">الفواتير</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">الفواتير</div>
                 <button
                   type="button"
                   onClick={() => setInvoiceModalOpen(true)}
@@ -254,7 +255,7 @@ export function ProjectFinancePage() {
               {invoices.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs text-right">
-                    <thead className="bg-slate-50 text-slate-600">
+                    <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 font-medium">رقم الفاتورة</th>
                         <th className="px-2 py-1 font-medium">التاريخ</th>
@@ -264,7 +265,7 @@ export function ProjectFinancePage() {
                     </thead>
                     <tbody>
                       {invoices.map((inv) => (
-                        <tr key={inv.id} className="border-t border-slate-100">
+                        <tr key={inv.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">{inv.number}</td>
                           <td className="px-2 py-1">
                             {inv.date && new Date(inv.date).toLocaleDateString('ar-EG')}
@@ -273,7 +274,7 @@ export function ProjectFinancePage() {
                             {inv.dueDate && new Date(inv.dueDate).toLocaleDateString('ar-EG')}
                           </td>
                           <td className="px-2 py-1">
-                            {inv.total.toLocaleString('ar-EG')}
+                            {inv.total.toLocaleString('ar-EG')} ليرة سورية
                           </td>
                         </tr>
                       ))}
@@ -287,7 +288,7 @@ export function ProjectFinancePage() {
           {activeTab === 'payments' && (
             <>
               <div className="flex justify-between items-center mb-2">
-                <div className="text-sm font-semibold text-slate-900">دفعات العملاء</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">دفعات العملاء</div>
                 <button
                   type="button"
                   onClick={() => setPaymentModalOpen(true)}
@@ -300,7 +301,7 @@ export function ProjectFinancePage() {
               {payments.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs text-right">
-                    <thead className="bg-slate-50 text-slate-600">
+                    <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 font-medium">التاريخ</th>
                         <th className="px-2 py-1 font-medium">المبلغ</th>
@@ -309,11 +310,11 @@ export function ProjectFinancePage() {
                     </thead>
                     <tbody>
                       {payments.map((p) => (
-                        <tr key={p.id} className="border-t border-slate-100">
+                        <tr key={p.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
                             {p.date && new Date(p.date).toLocaleDateString('ar-EG')}
                           </td>
-                          <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')}</td>
+                          <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')} ليرة سورية</td>\n                          <td className="px-2 py-1">{p.method || '-'}</td>
                           <td className="px-2 py-1">{p.method || '-'}</td>
                         </tr>
                       ))}
@@ -327,7 +328,7 @@ export function ProjectFinancePage() {
           {activeTab === 'expenses' && (
             <>
               <div className="flex justify-between items-center mb-2">
-                <div className="text-sm font-semibold text-slate-900">مصاريف المشروع</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">مصاريف المشروع</div>
                 <button
                   type="button"
                   onClick={() => setExpenseModalOpen(true)}
@@ -340,7 +341,7 @@ export function ProjectFinancePage() {
               {expenses.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs text-right">
-                    <thead className="bg-slate-50 text-slate-600">
+                    <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 font-medium">التاريخ</th>
                         <th className="px-2 py-1 font-medium">الوصف</th>
@@ -350,7 +351,7 @@ export function ProjectFinancePage() {
                     </thead>
                     <tbody>
                       {expenses.map((e) => (
-                        <tr key={e.id} className="border-t border-slate-100">
+                        <tr key={e.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
                             {e.date && new Date(e.date).toLocaleDateString('ar-EG')}
                           </td>
@@ -362,7 +363,7 @@ export function ProjectFinancePage() {
                             {e.category === 'extra_work' && 'أعمال إضافية'}
                             {e.category === 'other' && 'أخرى'}
                           </td>
-                          <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')}</td>
+                          <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                         </tr>
                       ))}
                     </tbody>
@@ -375,7 +376,7 @@ export function ProjectFinancePage() {
           {activeTab === 'workersLog' && (
             <>
               <div className="flex justify-between items-center mb-2">
-                <div className="text-sm font-semibold text-slate-900">سجل يوميات العمال</div>
+                <div className="text-sm font-semibold text-slate-900 dark:text-slate-50">سجل يوميات العمال</div>
                 <button
                   type="button"
                   onClick={() => setWorkerLogModalOpen(true)}
@@ -388,7 +389,7 @@ export function ProjectFinancePage() {
               {workerLogs.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs text-right">
-                    <thead className="bg-slate-50 text-slate-600">
+                    <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
                       <tr>
                         <th className="px-2 py-1 font-medium">التاريخ</th>
                         <th className="px-2 py-1 font-medium">عدد العمال</th>
@@ -399,14 +400,14 @@ export function ProjectFinancePage() {
                     </thead>
                     <tbody>
                       {workerLogs.map((l) => (
-                        <tr key={l.id} className="border-t border-slate-100">
+                        <tr key={l.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
                             {l.date && new Date(l.date).toLocaleDateString('ar-EG')}
                           </td>
                           <td className="px-2 py-1">{l.workersCount}</td>
                           <td className="px-2 py-1">{l.hoursPerWorker}</td>
-                          <td className="px-2 py-1">{l.hourlyRate.toLocaleString('ar-EG')}</td>
-                          <td className="px-2 py-1">{l.totalCost.toLocaleString('ar-EG')}</td>
+                          <td className="px-2 py-1">{l.hourlyRate.toLocaleString('ar-EG')} ليرة سورية</td>
+                          <td className="px-2 py-1">{l.totalCost.toLocaleString('ar-EG')} ليرة سورية</td>
                         </tr>
                       ))}
                     </tbody>
@@ -479,16 +480,15 @@ export function ProjectFinancePage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-slate-600">نسبة الضريبة % (اختياري)</label>
-              <input
-                type="number"
-                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
-                value={invoiceTaxRate}
-                onChange={(e) => setInvoiceTaxRate(e.target.value)}
-              />
-            </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">صورة الفاتورة (اختياري)</label>
+            <select
+              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={invoiceImageFileId}
+              onChange={(e) => setInvoiceImageFileId(e.target.value)}
+            >
+              <option value="">بدون صورة</option>
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] text-slate-600">وصف البنود / ملاحظات</label>

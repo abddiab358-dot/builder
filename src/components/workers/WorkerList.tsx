@@ -39,7 +39,7 @@ export function WorkerList({ workers, onDelete }: Props) {
                 {w.phone && <span>📱 {w.phone}</span>}
                 {w.dailyRate != null && (
                   <span className="px-2 py-1 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-medium">
-                    {w.dailyRate} ريال/يوم
+                    {w.dailyRate} ليرة سورية/يوم
                   </span>
                 )}
               </div>

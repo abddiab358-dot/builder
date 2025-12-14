@@ -28,7 +28,7 @@ export function ProjectDetail({ project }: Props) {
             {project.endDate && `إلى ${new Date(project.endDate).toLocaleDateString('ar-EG')}`}
           </div>
           {project.budget != null && (
-            <div>الميزانية التقديرية: {project.budget.toLocaleString('ar-EG')} ريال</div>
+            <div>الميزانية التقديرية: {project.budget.toLocaleString('ar-EG')} ليرة سورية</div>
           )}
         </div>
         {project.notes && (

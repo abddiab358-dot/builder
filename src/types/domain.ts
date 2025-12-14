@@ -107,6 +107,7 @@ export interface Invoice {
   paidAmount: number
   notes?: string
   logoFileId?: string
+  imageFileId?: string
   createdAt: string
 }
 
