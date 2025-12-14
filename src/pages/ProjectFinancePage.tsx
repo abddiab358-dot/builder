@@ -6,6 +6,7 @@ import { usePayments } from '../hooks/usePayments'
 import { useExpenses } from '../hooks/useExpenses'
 import { useWorkerLogs } from '../hooks/useWorkerLogs'
 import { useProjectFiles } from '../hooks/useProjectFiles'
+import { useWorkers } from '../hooks/useWorkers'
 import { Modal } from '../components/ui/Modal'
 import { BackButton } from '../components/ui/BackButton'
 import { InvoiceItem, ExpenseCategory } from '../types/domain'
@@ -19,6 +20,7 @@ export function ProjectFinancePage() {
   const expensesState = useExpenses(id)
   const workerLogsState = useWorkerLogs(id)
   const filesState = useProjectFiles(id)
+  const workersState = useWorkers(id)
 
   const [activeTab, setActiveTab] = useState<'invoices' | 'payments' | 'expenses' | 'workersLog'>('invoices')
 
@@ -34,6 +36,7 @@ export function ProjectFinancePage() {
   const [paymentDate, setPaymentDate] = useState('')
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentInvoiceId, setPaymentInvoiceId] = useState('')
+  const [paymentWorkerId, setPaymentWorkerId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('')
 
   const [expenseModalOpen, setExpenseModalOpen] = useState(false)
@@ -41,6 +44,8 @@ export function ProjectFinancePage() {
   const [expenseLabel, setExpenseLabel] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
   const [expenseDate, setExpenseDate] = useState('')
+  const [expenseWorkerId, setExpenseWorkerId] = useState('')
+  const [expenseDailyRate, setExpenseDailyRate] = useState('')
 
   const [workerLogModalOpen, setWorkerLogModalOpen] = useState(false)
   const [logDate, setLogDate] = useState('')
@@ -105,6 +110,7 @@ export function ProjectFinancePage() {
     await paymentsState.createPayment({
       projectId: id,
       invoiceId: paymentInvoiceId || undefined,
+      workerId: paymentWorkerId || undefined,
       date: paymentDate,
       amount,
       method: paymentMethod || undefined,
@@ -114,6 +120,7 @@ export function ProjectFinancePage() {
     setPaymentDate('')
     setPaymentAmount('')
     setPaymentInvoiceId('')
+    setPaymentWorkerId('')
     setPaymentMethod('')
     setPaymentModalOpen(false)
   }
@@ -129,12 +136,17 @@ export function ProjectFinancePage() {
       label: expenseLabel.trim(),
       amount,
       date: expenseDate,
+      workerId: expenseWorkerId || undefined,
+      dailyRate: expenseDailyRate ? Number(expenseDailyRate) : undefined,
       notes: undefined,
     } as any)
 
     setExpenseLabel('')
     setExpenseAmount('')
     setExpenseDate('')
+    setExpenseCategory('materials')
+    setExpenseWorkerId('')
+    setExpenseDailyRate('')
     setExpenseModalOpen(false)
   }
 
@@ -579,6 +591,21 @@ export function ProjectFinancePage() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
+            <label className="text-[11px] text-slate-600">ربط الدفعة بعامل (اختياري)</label>
+            <select
+              className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+              value={paymentWorkerId}
+              onChange={(e) => setPaymentWorkerId(e.target.value)}
+            >
+              <option value="">بدون</option>
+              {(workersState.data ?? []).map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} - {w.dailyRate || 0} ليرة سورية/يوم
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
             <label className="text-[11px] text-slate-600">طريقة الدفع (اختياري)</label>
             <input
               className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -653,9 +680,38 @@ export function ProjectFinancePage() {
               <option value="equipment">معدات</option>
               <option value="fuel">محروقات</option>
               <option value="extra_work">أعمال إضافية</option>
+              <option value="food">طعام</option>
+              <option value="worker_daily">يومية عمال</option>
               <option value="other">أخرى</option>
             </select>
           </div>
+          {expenseCategory === 'worker_daily' && (
+            <>
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] text-slate-600">اختر العامل</label>
+                <select
+                  className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  value={expenseWorkerId}
+                  onChange={(e) => {
+                    setExpenseWorkerId(e.target.value)
+                    const worker = (workersState.data ?? []).find((w) => w.id === e.target.value)
+                    if (worker) {
+                      setExpenseLabel(worker.name)
+                      setExpenseDailyRate((worker.dailyRate || 0).toString())
+                      setExpenseAmount((worker.dailyRate || 0).toString())
+                    }
+                  }}
+                >
+                  <option value="">اختر عاملاً</option>
+                  {(workersState.data ?? []).map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name} - {w.dailyRate || 0} ليرة سورية/يوم
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
         </div>
       </Modal>
 

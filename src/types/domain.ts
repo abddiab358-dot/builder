@@ -83,7 +83,7 @@ export interface ProjectFileMeta {
   createdAt: string
 }
 
-export type ExpenseCategory = 'materials' | 'equipment' | 'fuel' | 'extra_work' | 'other'
+export type ExpenseCategory = 'materials' | 'equipment' | 'fuel' | 'extra_work' | 'food' | 'worker_daily' | 'other'
 
 export interface InvoiceItem {
   id: string
@@ -115,6 +115,7 @@ export interface Payment {
   id: string
   projectId: string
   invoiceId?: string
+  workerId?: string
   date: string
   amount: number
   method?: string
@@ -129,6 +130,8 @@ export interface Expense {
   label: string
   amount: number
   date: string
+  workerId?: string
+  dailyRate?: number
   notes?: string
   createdAt: string
 }
