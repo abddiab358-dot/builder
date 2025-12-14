@@ -54,7 +54,7 @@ export function ProjectFinancePage() {
   const [deleteItem, setDeleteItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
 
   const [editModalOpen, setEditModalOpen] = useState(false)
-  const [editingItem, setEditingItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
+  const [editingItem, setEditingItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string, data: any } | null>(null)
 
   if (!id) return null
 
@@ -216,6 +216,49 @@ export function ProjectFinancePage() {
     setDeleteConfirmOpen(true)
   }
 
+  const openEditModal = (type: 'invoice' | 'payment' | 'expense', id: string) => {
+    let data = null
+    if (type === 'invoice') {
+      data = invoices.find((inv) => inv.id === id)
+    } else if (type === 'payment') {
+      data = payments.find((p) => p.id === id)
+    } else if (type === 'expense') {
+      data = expenses.find((e) => e.id === id)
+    }
+    if (!data) return
+    setEditingItem({ type, id, data })
+    setEditModalOpen(true)
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingItem) return
+    try {
+      if (editingItem.type === 'invoice') {
+        // تحديث الفاتورة
+        await invoicesState.createInvoice({
+          ...editingItem.data,
+          projectId: id,
+        } as any)
+      } else if (editingItem.type === 'payment') {
+        // تحديث الدفعة
+        await paymentsState.createPayment({
+          ...editingItem.data,
+          projectId: id,
+        } as any)
+      } else if (editingItem.type === 'expense') {
+        // تحديث المصروف
+        await expensesState.createExpense({
+          ...editingItem.data,
+          projectId: id,
+        } as any)
+      }
+      setEditModalOpen(false)
+      setEditingItem(null)
+    } catch (error) {
+      console.error('خطأ في تحديث العنصر:', error)
+    }
+  }
+
   return (
     <div className="space-y-4 text-right">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
@@ -337,6 +380,13 @@ export function ProjectFinancePage() {
                           <td className="px-2 py-1 flex gap-1 justify-end">
                             <button
                               type="button"
+                              onClick={() => openEditModal('invoice', inv.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                            >
+                              تعديل
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => openDeleteConfirm('invoice', inv.id)}
                               className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
                             >
@@ -385,6 +435,13 @@ export function ProjectFinancePage() {
                           <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                           <td className="px-2 py-1">{p.method || '-'}</td>
                           <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal('payment', p.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                            >
+                              تعديل
+                            </button>
                             <button
                               type="button"
                               onClick={() => openDeleteConfirm('payment', p.id)}
@@ -445,6 +502,13 @@ export function ProjectFinancePage() {
                           </td>
                           <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                           <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal('expense', e.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                            >
+                              تعديل
+                            </button>
                             <button
                               type="button"
                               onClick={() => openDeleteConfirm('expense', e.id)}

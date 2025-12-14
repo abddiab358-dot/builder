@@ -16,8 +16,31 @@ export function useProjectFiles(projectId?: string) {
   }
 
   const addFiles = async (files: File[], pid: string) => {
-    if (!projectFilesDir) throw new Error('لم يتم اختيار مجلد ملفات المشاريع')
-    if (!isReady) throw new Error('النظام غير جاهز بعد')
+    // إذا لم يكن المجلد محدداً، نخزن الملفات في localStorage فقط
+    if (!projectFilesDir) {
+      console.warn('مجلد الملفات لم يتم اختياره، سيتم حفظ البيانات في localStorage')
+      const now = new Date().toISOString()
+      const metas: ProjectFileMeta[] = files.map((file) => ({
+        id: createId(),
+        projectId: pid,
+        fileName: file.name,
+        mimeType: file.type,
+        createdAt: now,
+      }))
+      
+      try {
+        await collection.save((items) => [...items, ...metas])
+        log({ action: 'رفع ملفات', entity: 'file', entityId: pid, details: `عدد الملفات: ${metas.length}` }).catch(() => {})
+        return
+      } catch (error) {
+        console.error('خطأ في حفظ بيانات الملفات:', error)
+        throw new Error('فشل حفظ بيانات الملفات')
+      }
+    }
+
+    if (!isReady) {
+      throw new Error('النظام غير جاهز بعد، يرجى المحاولة لاحقاً')
+    }
     
     const now = new Date().toISOString()
 
