@@ -21,7 +21,8 @@ export function MainLayout() {
     if (location.pathname !== '/dashboard' && saveCurrentPath) {
       saveCurrentPath(location.pathname)
     }
-  }, [location.pathname, saveCurrentPath])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname])
 
   // Handle window resize
   useEffect(() => {
