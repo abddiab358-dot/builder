@@ -73,8 +73,16 @@ jobs:
       with:
         files: android/app/build/outputs/apk/debug/app-debug.apk
         tag_name: v${{ github.run_number }}-apk
+        body: |
+          # Build #${{ github.run_number }}
+          
+          ## Debug APK
+          This is a debug build for testing purposes. It is not optimized for production use.
+          
+          **NOT suitable for Play Store submission.**
+          For production releases, please generate a signed Release APK.
         draft: false
-        prerelease: false
+        prerelease: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       continue-on-error: true
