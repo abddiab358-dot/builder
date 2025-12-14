@@ -4,7 +4,6 @@ import { useProjects } from '../hooks/useProjects'
 import { useInvoices } from '../hooks/useInvoices'
 import { usePayments } from '../hooks/usePayments'
 import { useExpenses } from '../hooks/useExpenses'
-import { useWorkerLogs } from '../hooks/useWorkerLogs'
 import { useProjectFiles } from '../hooks/useProjectFiles'
 import { useWorkers } from '../hooks/useWorkers'
 import { Modal } from '../components/ui/Modal'
@@ -18,7 +17,6 @@ export function ProjectFinancePage() {
   const invoicesState = useInvoices(id)
   const paymentsState = usePayments(id)
   const expensesState = useExpenses(id)
-  const workerLogsState = useWorkerLogs(id)
   const filesState = useProjectFiles(id)
   const workersState = useWorkers(id)
 
@@ -59,12 +57,12 @@ export function ProjectFinancePage() {
   const invoices = invoicesState.data ?? []
   const payments = paymentsState.data ?? []
   const expenses = expensesState.data ?? []
-  const workerLogs = workerLogsState.data ?? []
+  const workerLogs = expenses.filter((e) => e.category === 'worker_daily')
 
   const totalInvoices = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
   const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
   const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
-  const totalLabor = workerLogs.reduce((sum, l) => sum + (l.totalCost || 0), 0)
+  const totalLabor = workerLogs.reduce((sum, e) => sum + (e.amount || 0), 0)
   const remaining = totalInvoices - totalPayments
 
   const handleCreateInvoice = async () => {
@@ -430,7 +428,7 @@ export function ProjectFinancePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(expenses.filter((e) => e.category === 'worker_daily') || []).map((e) => (
+                      {workerLogs.map((e) => (
                         <tr key={e.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
                             {e.date && new Date(e.date).toLocaleDateString('ar-EG')}
@@ -439,7 +437,6 @@ export function ProjectFinancePage() {
                           <td className="px-2 py-1">{e.notes ? e.notes.split(': ')[1] : '-'}</td>
                           <td className="px-2 py-1">{e.dailyRate?.toLocaleString('ar-EG') || '-'} ليرة سورية</td>
                           <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
-                          <td className="px-2 py-1">{l.totalCost.toLocaleString('ar-EG')} ليرة سورية</td>
                         </tr>
                       ))}
                     </tbody>
