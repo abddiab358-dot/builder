@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { SetupPage } from './pages/SetupPage'
 import { LoginPage } from './pages/LoginPage'
 import { InitialSetupPage } from './pages/InitialSetupPage'
 import { DebugPage } from './pages/DebugPage'
@@ -29,7 +28,6 @@ export default function App() {
       <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-50">
         <ThemeManager />
         <Routes>
-          <Route path="/setup" element={<SetupPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/initial-setup" element={<InitialSetupPage />} />
           <Route path="/debug" element={<DebugPage />} />
