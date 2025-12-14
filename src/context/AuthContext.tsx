@@ -1,8 +1,35 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import { PermissionUser } from '../types/domain'
-import { readJSONFile, saveJSONFile } from '../storage/fileSystem'
-import { getSavedDirectoryHandle } from '../storage/handleStore'
-import { hashPassword, verifyPassword } from '../utils/password'
+// في-memory fallback for mobile devices
+let inMemoryStorage: Record<string, string> = {}
+
+function safeGetItem(key: string): string | null {
+  try {
+    const value = localStorage.getItem(key)
+    return value || inMemoryStorage[key] || null
+  } catch (e) {
+    // localStorage might fail on mobile, use in-memory fallback
+    console.warn('localStorage access failed, using in-memory storage:', e)
+    return inMemoryStorage[key] || null
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch (e) {
+    // localStorage might fail on mobile, use in-memory fallback
+    console.warn('localStorage access failed, using in-memory storage:', e)
+    inMemoryStorage[key] = value
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key)
+  } catch (e) {
+    console.warn('localStorage removal failed, using in-memory fallback:', e)
+  }
+  delete inMemoryStorage[key]
+}
 
 export interface AuthUser {
   id: string
@@ -26,9 +53,9 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-// Initialize default data in localStorage if not exists
+// Initialize default data in in-memory and localStorage if not exists
 async function initializeDefaultData() {
-  const stored = localStorage.getItem('file:permissions.json')
+  const stored = safeGetItem('file:permissions.json')
   if (!stored) {
     const defaultPermissions = [
       {
@@ -40,21 +67,21 @@ async function initializeDefaultData() {
         createdAt: new Date().toISOString()
       }
     ]
-    localStorage.setItem('file:permissions.json', JSON.stringify(defaultPermissions))
+    safeSetItem('file:permissions.json', JSON.stringify(defaultPermissions))
   }
 
   // Initialize other default files
-  if (!localStorage.getItem('file:projects.json')) {
-    localStorage.setItem('file:projects.json', JSON.stringify([]))
+  if (!safeGetItem('file:projects.json')) {
+    safeSetItem('file:projects.json', JSON.stringify([]))
   }
-  if (!localStorage.getItem('file:tasks.json')) {
-    localStorage.setItem('file:tasks.json', JSON.stringify([]))
+  if (!safeGetItem('file:tasks.json')) {
+    safeSetItem('file:tasks.json', JSON.stringify([]))
   }
-  if (!localStorage.getItem('file:clients.json')) {
-    localStorage.setItem('file:clients.json', JSON.stringify([]))
+  if (!safeGetItem('file:clients.json')) {
+    safeSetItem('file:clients.json', JSON.stringify([]))
   }
-  if (!localStorage.getItem('file:session.json')) {
-    localStorage.setItem('file:session.json', JSON.stringify({}))
+  if (!safeGetItem('file:session.json')) {
+    safeSetItem('file:session.json', JSON.stringify({}))
   }
 }
 
@@ -68,17 +95,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         await initializeDefaultData()
         
-        // Try to load session from localStorage first (reliable)
-        const stored = localStorage.getItem('file:session.json')
+        // Try to load session from storage first (reliable)
+        const stored = safeGetItem('file:session.json')
         if (stored) {
           try {
             const data = JSON.parse(stored)
             if (data && data.user) {
-              console.log('Session restored from localStorage:', data.user.username)
+              console.log('Session restored from storage:', data.user.username)
               setUser(data.user)
             }
           } catch (error) {
-            console.error('Failed to parse session from localStorage:', error)
+            console.error('Failed to parse session from storage:', error)
           }
         }
       } catch (error) {
@@ -101,12 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setUser(newUser)
 
-    // Save session to localStorage directly (most reliable)
+    // Save session to storage directly (most reliable)
     try {
-      localStorage.setItem('file:session.json', JSON.stringify({ user: newUser }))
-      console.log('Session saved to localStorage:', username)
+      safeSetItem('file:session.json', JSON.stringify({ user: newUser }))
+      console.log('Session saved to storage:', username)
     } catch (error) {
-      console.error('Failed to save session to localStorage:', error)
+      console.error('Failed to save session to storage:', error)
     }
 
     // Also try to save to file system
@@ -122,11 +149,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Login attempt for user:', username)
       console.log('localStorage keys:', Object.keys(localStorage))
       
-      // قراءة مباشرة من localStorage - هذا موثوق أكثر
+      // قراءة مباشرة من storage - هذا موثوق أكثر
       let usersData: any[] | null = null
       
-      const stored = localStorage.getItem('file:permissions.json')
-      console.log('Raw localStorage data:', stored)
+      const stored = safeGetItem('file:permissions.json')
+      console.log('Raw storage data:', stored)
       
       if (stored) {
         try {
@@ -147,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('Attempting to reinitialize default data...')
         await initializeDefaultData()
         // حاول مرة أخرى
-        const storedAgain = localStorage.getItem('file:permissions.json')
+        const storedAgain = safeGetItem('file:permissions.json')
         if (storedAgain) {
           const retryUsers = JSON.parse(storedAgain)
           const retryUser = retryUsers.find((u: any) => u.username === username)
@@ -189,10 +216,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = () => {
     setUser(null)
-    // حذف ملف الجلسة من localStorage
+    // حذف ملف الجلسة من storage
     try {
-      localStorage.removeItem('file:session.json')
-      console.log('Session cleared from localStorage')
+      safeRemoveItem('file:session.json')
+      console.log('Session cleared from storage')
     } catch (error) {
       console.error('Failed to clear session:', error)
     }
@@ -202,9 +229,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const updatedUser = { ...user, name, role }
       setUser(updatedUser)
-      // Save to localStorage
+      // Save to storage
       try {
-        localStorage.setItem('file:session.json', JSON.stringify({ user: updatedUser }))
+        safeSetItem('file:session.json', JSON.stringify({ user: updatedUser }))
         // Also try to save to file system
         saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
       } catch (error) {
@@ -218,8 +245,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const updatedUser = { ...user, lastPath: path }
       setUser(updatedUser)
       try {
-        // Save to localStorage
-        localStorage.setItem('file:session.json', JSON.stringify({ user: updatedUser }))
+        // Save to storage
+        safeSetItem('file:session.json', JSON.stringify({ user: updatedUser }))
         // Also try to save to file system
         saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
       } catch (error) {
