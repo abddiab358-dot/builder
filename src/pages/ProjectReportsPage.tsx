@@ -3,15 +3,26 @@ import { useParams } from 'react-router-dom'
 import { useProjects } from '../hooks/useProjects'
 import { useDailyReports } from '../hooks/useDailyReports'
 import { useProjectFiles } from '../hooks/useProjectFiles'
+import { useInvoices } from '../hooks/useInvoices'
+import { usePayments } from '../hooks/usePayments'
+import { useExpenses } from '../hooks/useExpenses'
+import { useWorkers } from '../hooks/useWorkers'
+import { useTasks } from '../hooks/useTasks'
 import { Modal } from '../components/ui/Modal'
 import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { generateDailyReportHTML, openReportInWindow, downloadReportAsHTML } from '../utils/reportGenerator'
 
 export function ProjectReportsPage() {
   const { id } = useParams<{ id: string }>()
   const { data: projects } = useProjects()
   const { data: reportsData, createReport, deleteReport } = useDailyReports(id)
   const { data: projectFiles } = useProjectFiles(id)
+  const { data: invoices } = useInvoices(id)
+  const { data: payments } = usePayments(id)
+  const { data: expenses } = useExpenses(id)
+  const { data: workers } = useWorkers(id)
+  const { data: tasks } = useTasks(id)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [date, setDate] = useState('')
@@ -57,17 +68,38 @@ export function ProjectReportsPage() {
     <div className="space-y-4 text-right">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-900">التقارير اليومية للمشروع</h2>
-          {project && <p className="text-xs text-slate-600">{project.title}</p>}
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">التقارير اليومية للمشروع</h2>
+          {project && <p className="text-xs text-slate-600 dark:text-slate-400">{project.title}</p>}
         </div>
-        <BackButton fallbackPath={`/projects/${id}`} />
-        <button
-          type="button"
-          onClick={() => setCreateOpen(true)}
-          className="px-4 py-2 rounded-md text-xs font-medium bg-primary-600 text-white hover:bg-primary-700"
-        >
-          + تقرير يومي جديد
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              if (!project) return
+              const html = generateDailyReportHTML({
+                project,
+                reports: reportsData ?? [],
+                invoices: invoices ?? [],
+                payments: payments ?? [],
+                expenses: expenses ?? [],
+                workers: workers ?? [],
+                tasks: tasks ?? [],
+              })
+              openReportInWindow(html)
+            }}
+            className="px-4 py-2 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            📋 عرض / طباعة التقرير
+          </button>
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="px-4 py-2 rounded-md text-xs font-medium bg-primary-600 text-white hover:bg-primary-700"
+          >
+            + تقرير يومي جديد
+          </button>
+          <BackButton fallbackPath={`/projects/${id}`} />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">

@@ -3,9 +3,10 @@ import { Worker } from '../../types/domain'
 interface Props {
   workers: Worker[]
   onDelete?: (id: string) => void
+  onEdit?: (worker: Worker) => void
 }
 
-export function WorkerList({ workers, onDelete }: Props) {
+export function WorkerList({ workers, onDelete, onEdit }: Props) {
   if (!workers.length) {
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -44,15 +45,26 @@ export function WorkerList({ workers, onDelete }: Props) {
                 )}
               </div>
             </div>
-            {onDelete && (
-              <button
-                type="button"
-                onClick={() => onDelete(w.id)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors whitespace-nowrap"
-              >
-                حذف
-              </button>
-            )}
+            <div className="flex gap-2">
+              {onEdit && (
+                <button
+                  type="button"
+                  onClick={() => onEdit(w)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors whitespace-nowrap"
+                >
+                  تعديل
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={() => onDelete(w.id)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors whitespace-nowrap"
+                >
+                  حذف
+                </button>
+              )}
+            </div>
           </div>
           {w.notes && (
             <div className="pt-3 border-t border-slate-200 dark:border-slate-800">

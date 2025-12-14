@@ -50,6 +50,12 @@ export function ProjectFinancePage() {
   const [logWorkerId, setLogWorkerId] = useState('')
   const [logWorkersCount, setLogWorkersCount] = useState('1')
 
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [deleteItem, setDeleteItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
+
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
+
   if (!id) return null
 
   const project = (projects ?? []).find((p) => p.id === id)
@@ -188,6 +194,28 @@ export function ProjectFinancePage() {
     }
   }
 
+  const handleDeleteItem = async () => {
+    if (!deleteItem) return
+    try {
+      if (deleteItem.type === 'invoice') {
+        await invoicesState.deleteInvoice(deleteItem.id)
+      } else if (deleteItem.type === 'payment') {
+        await paymentsState.deletePayment(deleteItem.id)
+      } else if (deleteItem.type === 'expense') {
+        await expensesState.deleteExpense(deleteItem.id)
+      }
+      setDeleteItem(null)
+      setDeleteConfirmOpen(false)
+    } catch (error) {
+      console.error('خطأ في حذف العنصر:', error)
+    }
+  }
+
+  const openDeleteConfirm = (type: 'invoice' | 'payment' | 'expense', id: string) => {
+    setDeleteItem({ type, id })
+    setDeleteConfirmOpen(true)
+  }
+
   return (
     <div className="space-y-4 text-right">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
@@ -290,6 +318,7 @@ export function ProjectFinancePage() {
                         <th className="px-2 py-1 font-medium">التاريخ</th>
                         <th className="px-2 py-1 font-medium">الاستحقاق</th>
                         <th className="px-2 py-1 font-medium">الإجمالي</th>
+                        <th className="px-2 py-1 font-medium">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -304,6 +333,15 @@ export function ProjectFinancePage() {
                           </td>
                           <td className="px-2 py-1">
                             {inv.total.toLocaleString('ar-EG')} ليرة سورية
+                          </td>
+                          <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirm('invoice', inv.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                            >
+                              حذف
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -335,6 +373,7 @@ export function ProjectFinancePage() {
                         <th className="px-2 py-1 font-medium">التاريخ</th>
                         <th className="px-2 py-1 font-medium">المبلغ</th>
                         <th className="px-2 py-1 font-medium">طريقة الدفع</th>
+                        <th className="px-2 py-1 font-medium">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -343,8 +382,17 @@ export function ProjectFinancePage() {
                           <td className="px-2 py-1">
                             {p.date && new Date(p.date).toLocaleDateString('ar-EG')}
                           </td>
-                          <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')} ليرة سورية</td>\n                          <td className="px-2 py-1">{p.method || '-'}</td>
+                          <td className="px-2 py-1">{p.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                           <td className="px-2 py-1">{p.method || '-'}</td>
+                          <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirm('payment', p.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                            >
+                              حذف
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -376,6 +424,7 @@ export function ProjectFinancePage() {
                         <th className="px-2 py-1 font-medium">الوصف</th>
                         <th className="px-2 py-1 font-medium">النوع</th>
                         <th className="px-2 py-1 font-medium">المبلغ</th>
+                        <th className="px-2 py-1 font-medium">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -390,9 +439,20 @@ export function ProjectFinancePage() {
                             {e.category === 'equipment' && 'معدات'}
                             {e.category === 'fuel' && 'محروقات'}
                             {e.category === 'extra_work' && 'أعمال إضافية'}
+                            {e.category === 'food' && 'طعام'}
+                            {e.category === 'worker_daily' && 'يومية عمال'}
                             {e.category === 'other' && 'أخرى'}
                           </td>
                           <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
+                          <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirm('expense', e.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                            >
+                              حذف
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -799,6 +859,40 @@ export function ProjectFinancePage() {
               </div>
             </div>
           )}
+        </div>
+      </Modal>
+
+      <Modal
+        open={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false)
+          setDeleteItem(null)
+        }}
+        title="تأكيد الحذف"
+        footer={
+          <div className="flex justify-between w-full">
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteConfirmOpen(false)
+                setDeleteItem(null)
+              }}
+              className="px-3 py-1.5 rounded-md text-xs border border-slate-300 text-slate-700 hover:bg-slate-50"
+            >
+              إلغاء
+            </button>
+            <button
+              type="button"
+              onClick={handleDeleteItem}
+              className="px-3 py-1.5 rounded-md text-xs bg-red-600 text-white hover:bg-red-700"
+            >
+              حذف نهائياً
+            </button>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-slate-700 dark:text-slate-300">هل أنت متأكد من حذف هذا العنصر؟ لا يمكن التراجع عن هذا الإجراء.</p>
         </div>
       </Modal>
     </div>
