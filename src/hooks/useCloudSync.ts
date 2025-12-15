@@ -55,24 +55,29 @@ export function useCloudSync() {
   const authenticateGoogle = useCallback(async () => {
     setIsSyncing(true)
     try {
-      // @ts-ignore - showDirectoryPicker might not be in TS definition
-      const dirHandle = await window.showDirectoryPicker()
-      if (!dirHandle) {
-        throw new Error('User cancelled')
+      // التحقق من دعم File System Access API (للحاسوب)
+      // @ts-ignore
+      if (typeof window.showDirectoryPicker !== 'undefined') {
+        const dirHandle = await window.showDirectoryPicker()
+        if (!dirHandle) {
+          throw new Error('User cancelled')
+        }
+        await saveSyncDirectoryHandle(dirHandle)
+      } else {
+        // للموبايل: نعتبر الاتصال ناجحاً ولكن سنستخدم المشاركة اليدوية عند المزامنة
+        console.log('Mobile device detected: Using manual share for sync')
       }
-
-      await saveSyncDirectoryHandle(dirHandle)
 
       const newSettings: CloudSyncSettings = {
         enabled: true,
-        provider: 'google', // We still call it google for UI purposes
-        accessToken: 'local-folder-token', // Dummy token to satisfy type
+        provider: 'google',
+        accessToken: 'local-folder-token',
         autoSync: false,
         syncInterval: 30,
       }
 
       await saveSettings(newSettings)
-      return { success: true, message: 'تم ربط مجلد Google Drive بنجاح' }
+      return { success: true, message: 'تم تفعيل المزامنة مع Google Drive بنجاح' }
     } catch (error) {
       console.error('Folder selection failed:', error)
       return { success: false, message: 'فشل ربط المجلد' }
@@ -96,12 +101,8 @@ export function useCloudSync() {
     setSyncProgress(0)
 
     try {
-      const syncDir = await getSyncDirectoryHandle()
-      if (!syncDir) {
-        throw new Error('لم يتم العثور على المجلد المرتبط. يرجى إعادة الربط.')
-      }
-
-      // قائمة الملفات المراد نسخها
+      // 1. تجميع كل البيانات
+      const payload: Record<string, any> = {}
       const handlesMap: Record<string, FileSystemFileHandle | undefined> = {
         'projects.json': allHandles.projects,
         'tasks.json': allHandles.tasks,
@@ -117,44 +118,96 @@ export function useCloudSync() {
       }
 
       const files = Object.keys(handlesMap)
-      let totalItems = 0
-
       for (let i = 0; i < files.length; i++) {
         const filename = files[i]
-        setSyncProgress(Math.round((i / files.length) * 100))
-
         const sourceHandle = handlesMap[filename]
         if (sourceHandle) {
-          // Read source
           const data = await readJSONFileHandle(sourceHandle)
           if (data) {
-            // Write to sync dir
-            // @ts-ignore
-            const targetFileHandle = await syncDir.getFileHandle(filename, { create: true })
-            await saveJSONFileHandle(targetFileHandle, data)
-            totalItems++
+            const key = filename.replace('.json', '') // projects.json -> projects
+            payload[key] = data
           }
         }
       }
 
-      setSyncProgress(100)
-
-      const result: SyncResult = {
-        success: true,
-        message: `تم نسخ البيانات بنجاح إلى المجلد المحلي (${totalItems} ملف)`,
-        syncedItems: totalItems,
-        timestamp: new Date().toISOString(),
+      // 2. محاولة الحفظ في المجلد المربوط (للحاسوب)
+      let savedToFolder = false
+      try {
+        const syncDir = await getSyncDirectoryHandle()
+        if (syncDir) {
+          // إذا وجدنا مجلد مربوط، نحفظ الملفات فيه
+          for (let i = 0; i < files.length; i++) {
+            const filename = files[i]
+            setSyncProgress(Math.round((i / files.length) * 100))
+            const data = payload[filename.replace('.json', '')]
+            if (data) {
+              // @ts-ignore
+              const targetFileHandle = await syncDir.getFileHandle(filename, { create: true })
+              await saveJSONFileHandle(targetFileHandle, data)
+            }
+          }
+          savedToFolder = true
+        }
+      } catch (err) {
+        console.warn('Failed to save to sync folder, falling back to share', err)
       }
 
-      setLastSyncResult(result)
+      if (savedToFolder) {
+        setSyncProgress(100)
+        const result: SyncResult = {
+          success: true,
+          message: `تم نسخ البيانات بنجاح إلى المجلد المحلي`,
+          syncedItems: files.length,
+          timestamp: new Date().toISOString(),
+        }
+        setLastSyncResult(result)
+        await saveSettings({ ...syncSettings, lastSyncTime: new Date().toISOString() })
+        return result
+      }
 
-      // تحديث وقت المزامنة الأخيرة
-      await saveSettings({
-        ...syncSettings,
-        lastSyncTime: new Date().toISOString(),
-      })
+      // 3. (للموبايل) إذا لم يتم الحفظ في مجلد، نستخدم المشاركة
+      const filename = `sync-data-${new Date().toISOString().slice(0, 10)}.json`
+      const jsonStr = JSON.stringify(payload, null, 2)
+      const blob = new Blob([jsonStr], { type: 'application/json' })
+      const file = new File([blob], filename, { type: 'application/json' })
 
-      return result
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'مزامنة البيانات',
+          text: 'ملف مزامنة بيانات برنامج المقاولات'
+        })
+        const result: SyncResult = {
+          success: true,
+          message: 'تمت مشاركة ملف المزامنة بنجاح',
+          syncedItems: 1,
+          timestamp: new Date().toISOString(),
+        }
+        setLastSyncResult(result)
+        await saveSettings({ ...syncSettings, lastSyncTime: new Date().toISOString() })
+        return result
+      } else {
+        // Fallback download
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+        const result: SyncResult = {
+          success: true,
+          message: 'تم تنزيل ملف المزامنة',
+          syncedItems: 1,
+          timestamp: new Date().toISOString(),
+        }
+        setLastSyncResult(result)
+        await saveSettings({ ...syncSettings, lastSyncTime: new Date().toISOString() })
+        return result
+      }
+
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'فشل غير معروف'
       const result: SyncResult = {

@@ -24,8 +24,17 @@ export function BackupManager() {
 
       const filename = `backup-${new Date().toISOString().slice(0, 10)}.json`
 
-      // المحاولة الأولى: استخدام File System Access API (للحاسوب)
-      const backupHandle = await createJSONFile(filename)
+      // المحاولة الأولى: استخدام File System Access API (للحاسوب فقط)
+      let backupHandle: FileSystemFileHandle | null = null
+      try {
+        if (typeof window.showSaveFilePicker !== 'undefined') {
+          backupHandle = await createJSONFile(filename)
+        }
+      } catch (err) {
+        // Ignore errors from FS API and fall back
+        console.warn('FS Access API failed or cancelled', err)
+      }
+
       if (backupHandle) {
         await saveJSONFileHandle(backupHandle, payload)
         setMessage('تم إنشاء ملف النسخة الاحتياطية بنجاح على جهازك.')
@@ -44,10 +53,8 @@ export function BackupManager() {
             })
             setMessage('تمت مشاركة النسخة الاحتياطية بنجاح.')
           } catch (shareError) {
-            // إذا ألغى المستخدم المشاركة أو فشلت
-            if ((shareError as Error).name !== 'AbortError') {
-              throw shareError
-            }
+            // إما أن المستخدم ألغى أو فشلت المشاركة
+            console.error('Share failed', shareError)
           }
         } else {
           // المحاولة الثالثة: تنزيل مباشر
