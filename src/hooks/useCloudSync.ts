@@ -1,7 +1,12 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { CloudSyncSettings, CloudProvider } from '../types/domain'
 import { useJsonCollection } from './useJsonCollection'
 import { useFileSystem } from '../context/FileSystemContext'
+import {
+  saveSyncDirectoryHandle,
+  getSyncDirectoryHandle,
+} from '../storage/handleStore'
+import { saveJSONFileHandle, readJSONFileHandle } from '../storage/fileSystem'
 
 interface SyncResult {
   success: boolean
@@ -11,7 +16,7 @@ interface SyncResult {
 }
 
 export function useCloudSync() {
-  const { settings: settingsHandle } = useFileSystem()
+  const { settings: settingsHandle, ...allHandles } = useFileSystem()
   const [syncSettings, setSyncSettings] = useState<CloudSyncSettings>({
     enabled: false,
     provider: 'none',
@@ -46,63 +51,40 @@ export function useCloudSync() {
     }
   }, [])
 
-  // تسجيل الدخول إلى Google Drive
+  // بدلاً من تسجيل الدخول OAuth، نطلب من المستخدم اختيار مجلد Google Drive
   const authenticateGoogle = useCallback(async () => {
     setIsSyncing(true)
     try {
-      // هنا يتم التكامل مع Google OAuth API
-      // This is a placeholder - in production you'd use @react-oauth/google
-      console.log('Authenticating with Google Drive...')
+      // @ts-ignore - showDirectoryPicker might not be in TS definition
+      const dirHandle = await window.showDirectoryPicker()
+      if (!dirHandle) {
+        throw new Error('User cancelled')
+      }
 
-      // محاكاة عملية المصادقة
-      const mockAccessToken = `google_access_token_${Date.now()}`
+      await saveSyncDirectoryHandle(dirHandle)
 
       const newSettings: CloudSyncSettings = {
         enabled: true,
-        provider: 'google',
-        accessToken: mockAccessToken,
+        provider: 'google', // We still call it google for UI purposes
+        accessToken: 'local-folder-token', // Dummy token to satisfy type
         autoSync: false,
         syncInterval: 30,
       }
 
       await saveSettings(newSettings)
-      return { success: true, message: 'تم الاتصال بـ Google Drive بنجاح' }
+      return { success: true, message: 'تم ربط مجلد Google Drive بنجاح' }
     } catch (error) {
-      console.error('Google authentication failed:', error)
-      return { success: false, message: 'فشل الاتصال بـ Google Drive' }
+      console.error('Folder selection failed:', error)
+      return { success: false, message: 'فشل ربط المجلد' }
     } finally {
       setIsSyncing(false)
     }
   }, [saveSettings])
 
-  // تسجيل الدخول إلى OneDrive
+  // إلغاء Microsoft حالياً
   const authenticateMicrosoft = useCallback(async () => {
-    setIsSyncing(true)
-    try {
-      // هنا يتم التكامل مع Microsoft OAuth API
-      // This is a placeholder - in production you'd use @microsoft/msal-react
-      console.log('Authenticating with OneDrive...')
-
-      // محاكاة عملية المصادقة
-      const mockAccessToken = `microsoft_access_token_${Date.now()}`
-
-      const newSettings: CloudSyncSettings = {
-        enabled: true,
-        provider: 'microsoft',
-        accessToken: mockAccessToken,
-        autoSync: false,
-        syncInterval: 30,
-      }
-
-      await saveSettings(newSettings)
-      return { success: true, message: 'تم الاتصال بـ OneDrive بنجاح' }
-    } catch (error) {
-      console.error('Microsoft authentication failed:', error)
-      return { success: false, message: 'فشل الاتصال بـ OneDrive' }
-    } finally {
-      setIsSyncing(false)
-    }
-  }, [saveSettings])
+    return { success: false, message: 'غير مدعوم حالياً' }
+  }, [])
 
   // مزامنة البيانات
   const syncData = useCallback(async () => {
@@ -114,38 +96,52 @@ export function useCloudSync() {
     setSyncProgress(0)
 
     try {
-      const collections = [
-        'projects.json',
-        'tasks.json',
-        'clients.json',
-        'workers.json',
-        'invoices.json',
-        'payments.json',
-        'expenses.json',
-        'daily_reports.json',
-        'worker_logs.json',
-      ]
+      const syncDir = await getSyncDirectoryHandle()
+      if (!syncDir) {
+        throw new Error('لم يتم العثور على المجلد المرتبط. يرجى إعادة الربط.')
+      }
 
+      // قائمة الملفات المراد نسخها
+      const handlesMap: Record<string, FileSystemFileHandle | undefined> = {
+        'projects.json': allHandles.projects,
+        'tasks.json': allHandles.tasks,
+        'clients.json': allHandles.clients,
+        'workers.json': allHandles.workers,
+        'invoices.json': allHandles.invoices,
+        'payments.json': allHandles.payments,
+        'expenses.json': allHandles.expenses,
+        'daily_reports.json': allHandles.dailyReports,
+        'workers_log.json': allHandles.workersLog,
+        'attendance.json': allHandles.attendance,
+        'permissions.json': allHandles.permissions
+      }
+
+      const files = Object.keys(handlesMap)
       let totalItems = 0
 
-      // محاكاة مزامنة كل مجموعة
-      for (let i = 0; i < collections.length; i++) {
-        setSyncProgress(Math.round((i / collections.length) * 100))
+      for (let i = 0; i < files.length; i++) {
+        const filename = files[i]
+        setSyncProgress(Math.round((i / files.length) * 100))
 
-        // هنا يتم إرسال البيانات إلى السحابة
-        console.log(`Syncing ${collections[i]}...`)
-
-        // محاكاة التأخير
-        await new Promise((resolve) => setTimeout(resolve, 500))
-
-        totalItems += Math.floor(Math.random() * 10) + 1
+        const sourceHandle = handlesMap[filename]
+        if (sourceHandle) {
+          // Read source
+          const data = await readJSONFileHandle(sourceHandle)
+          if (data) {
+            // Write to sync dir
+            // @ts-ignore
+            const targetFileHandle = await syncDir.getFileHandle(filename, { create: true })
+            await saveJSONFileHandle(targetFileHandle, data)
+            totalItems++
+          }
+        }
       }
 
       setSyncProgress(100)
 
       const result: SyncResult = {
         success: true,
-        message: `تمت المزامنة بنجاح - تم مزامنة ${totalItems} عنصر`,
+        message: `تم نسخ البيانات بنجاح إلى المجلد المحلي (${totalItems} ملف)`,
         syncedItems: totalItems,
         timestamp: new Date().toISOString(),
       }
@@ -173,7 +169,7 @@ export function useCloudSync() {
       setIsSyncing(false)
       setSyncProgress(0)
     }
-  }, [syncSettings, saveSettings])
+  }, [syncSettings, saveSettings, allHandles])
 
   // فصل الحساب السحابي
   const disconnect = useCallback(async () => {
@@ -183,6 +179,8 @@ export function useCloudSync() {
       autoSync: false,
     }
     await saveSettings(newSettings)
+    // Maybe clear handle from IDB? 
+    // await clearSavedDirectoryHandle() // No, that's root. clearSyncDirectoryHandle needed if we implemented it.
   }, [saveSettings])
 
   return {

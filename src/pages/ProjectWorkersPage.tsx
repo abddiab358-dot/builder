@@ -9,6 +9,7 @@ import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Modal } from '../components/ui/Modal'
 import { Worker } from '../types/domain'
+import { useAttendance } from '../hooks/useAttendance'
 
 export function ProjectWorkersPage() {
   const { id } = useParams<{ id: string }>()
@@ -18,6 +19,15 @@ export function ProjectWorkersPage() {
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [showChecklist, setShowChecklist] = useState(false)
+  const { getAttendanceByDate, saveAttendance } = useAttendance()
+  const [checklistDate, setChecklistDate] = useState(new Date().toISOString().split('T')[0])
+
+  const checklistItems = getAttendanceByDate(checklistDate).filter((item) => {
+    // Filter by workers in this project if needed, or rely on workerId
+    // Since attendance is global, we should check if the worker is in this project
+    const workerIds = (workers ?? []).map((w) => w.id)
+    return workerIds.includes(item.workerId)
+  })
 
   if (!id) return null
 
@@ -65,20 +75,24 @@ export function ProjectWorkersPage() {
         }}
       />
 
+
+
       {showChecklist && (
         <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
           <DailyChecklistTable
             workers={workers ?? []}
-            onSave={async () => {
-              // The checklist is for tracking purposes, saves directly
-              // In a real app, you might want to save to a separate checklist table
+            items={checklistItems}
+            date={checklistDate}
+            onDateChange={setChecklistDate}
+            onSave={async (items) => {
+              await saveAttendance(items)
             }}
           />
         </div>
       )}
 
-      <WorkerList 
-        workers={workers ?? []} 
+      <WorkerList
+        workers={workers ?? []}
         onDelete={(wid) => setWorkerToDeleteId(wid)}
         onEdit={(worker) => handleOpenEdit(worker)}
       />

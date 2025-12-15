@@ -174,7 +174,7 @@ export interface Notification {
   dueDate?: string
 }
 
-export type UserRole = 'manager' | 'staff' | 'viewer'
+export type UserRole = 'manager' | 'staff' | 'viewer' | 'supervisor'
 
 export interface PermissionUser {
   id: string
@@ -220,4 +220,13 @@ export interface SmartFundTransaction {
   notes?: string
   exchangeRate?: number // Rate used for conversion/display at time of entry
   createdAt: string
+}
+
+export interface DailyChecklistItem {
+  id: string
+  date: string
+  workerId: string
+  workerName: string
+  present: boolean
+  notes: string
 }

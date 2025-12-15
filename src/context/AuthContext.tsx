@@ -40,7 +40,7 @@ function safeRemoveItem(key: string): void {
 export interface AuthUser {
   id: string
   name: string
-  role: 'manager' | 'staff' | 'viewer'
+  role: PermissionUser['role']
   isLoggedIn: boolean
   username?: string
   lastPath?: string
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const initialize = async () => {
       try {
         await initializeDefaultData()
-        
+
         // Try to load session from storage first (reliable)
         const stored = safeGetItem('file:session.json')
         if (stored) {
@@ -153,56 +153,74 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const loginWithPassword = async (username: string, password: string): Promise<boolean> => {
     try {
       console.log('Login attempt for user:', username)
-      console.log('localStorage keys:', Object.keys(localStorage))
-      
-      // قراءة مباشرة من storage - هذا موثوق أكثر
+
+      // 1. القراءة من المصدر الأساسي (الملفات/الذاكرة)
       let usersData: any[] | null = null
-      
-      const stored = safeGetItem('file:permissions.json')
-      console.log('Raw storage data:', stored)
-      
-      if (stored) {
+      try {
+        usersData = await readJSONFile('permissions.json')
+        console.log('Read users from system:', usersData)
+      } catch (readError) {
+        console.error('Failed to read permissions file:', readError)
+      }
+
+      let users = usersData || []
+
+      // 2. محاولة البحث في البيانات المقروءة
+      let user = users.find((u: any) => u.username === username)
+
+      // 3. إذا لم يوجد، تحقق من LocalStorage مباشرة (ربما لم تتم المزامنة مع القرص بعد)
+      if (!user) {
+        console.log('User not found in main file, checking LocalStorage cache...')
         try {
-          usersData = JSON.parse(stored)
-          console.log('Parsed users from localStorage:', usersData)
-        } catch (parseError) {
-          console.error('Failed to parse localStorage data:', parseError)
+          // جرب المفاتيح المحتملة (الجديد والقديم)
+          const keysToCheck = ['file:permissions.json', 'collection:permissions']
+
+          for (const key of keysToCheck) {
+            const cached = localStorage.getItem(key)
+            if (cached) {
+              const cachedUsers = JSON.parse(cached)
+              if (Array.isArray(cachedUsers)) {
+                const cachedUser = cachedUsers.find((u: any) => u.username === username)
+                if (cachedUser) {
+                  console.log('User found in LocalStorage cache:', cachedUser.name, 'Key:', key)
+                  user = cachedUser
+                  break
+                }
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Cache check failed:', e)
         }
       }
 
-      const users = usersData || []
-
-      // البحث عن المستخدم
-      const user = users.find((u: any) => u.username === username)
+      // 4. إذا لا يزال غير موجود، حاول إعادة التهيئة (للمشرف الافتراضي فقط)
       if (!user) {
-        console.log('User not found:', username, 'Available users:', users.map((u: any) => u.username))
-        // إذا لم يوجد، حاول إضافة البيانات الافتراضية
-        console.log('Attempting to reinitialize default data...')
-        await initializeDefaultData()
-        // حاول مرة أخرى
-        const storedAgain = safeGetItem('file:permissions.json')
-        if (storedAgain) {
-          const retryUsers = JSON.parse(storedAgain)
-          const retryUser = retryUsers.find((u: any) => u.username === username)
-          if (retryUser) {
-            console.log('User found after reinitialization:', retryUser.name)
-            const inputHash = hashPassword(password)
-            const isValidPassword = verifyPassword(password, retryUser.passwordHash)
-            if (isValidPassword) {
-              await login(retryUser.id, retryUser.name, retryUser.role, username)
-              return true
+        console.log('User not found:', username)
+        const isDefaultAdmin = username === 'osamah'
+
+        if (isDefaultAdmin) {
+          console.log('Attempting to reinitialize default data for admin...')
+          await initializeDefaultData()
+
+          // قراءة أخيرة
+          try {
+            const retryUsers = await readJSONFile('permissions.json')
+            if (Array.isArray(retryUsers)) {
+              user = retryUsers.find((u: any) => u.username === username)
             }
-          }
+          } catch (retryError) { }
         }
+      }
+
+      if (!user) {
+        console.log('User finally not found')
         return false
       }
 
-      console.log('User found:', user.name, 'Password hash:', user.passwordHash)
-      
+      console.log('User found:', user.name)
+
       // التحقق من كلمة السر
-      const inputHash = hashPassword(password)
-      console.log('Input password hash:', inputHash, 'Stored hash:', user.passwordHash)
-      
       const isValidPassword = verifyPassword(password, user.passwordHash)
       if (!isValidPassword) {
         console.log('Invalid password for user:', username)
@@ -210,7 +228,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       console.log('Login successful for user:', username)
-      
+
       // تسجيل الدخول
       await login(user.id, user.name, user.role, username)
       return true
@@ -239,7 +257,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         safeSetItem('file:session.json', JSON.stringify({ user: updatedUser }))
         // Also try to save to file system
-        saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
+        saveJSONFile('session.json', { user: updatedUser }).catch(() => { })
       } catch (error) {
         console.error('Failed to update session:', error)
       }
@@ -254,7 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Save to storage
         safeSetItem('file:session.json', JSON.stringify({ user: updatedUser }))
         // Also try to save to file system
-        saveJSONFile('session.json', { user: updatedUser }).catch(() => {})
+        saveJSONFile('session.json', { user: updatedUser }).catch(() => { })
       } catch (error) {
         console.error('Failed to save path:', error)
       }

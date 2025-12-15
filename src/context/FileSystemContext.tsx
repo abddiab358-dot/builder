@@ -21,6 +21,7 @@ export interface StorageHandles {
   permissions?: FileSystemFileHandle
   locations?: FileSystemFileHandle
   smartFund?: FileSystemFileHandle
+  attendance?: FileSystemFileHandle
 }
 
 interface FileSystemContextValue extends StorageHandles {
@@ -94,6 +95,7 @@ export const FileSystemProvider: React.FC<React.PropsWithChildren> = ({ children
           permissions,
           locations,
           smartFund,
+          attendance,
         ] = await Promise.all([
           ensureFile('projects.json', []),
           ensureFile('tasks.json', []),
@@ -111,6 +113,7 @@ export const FileSystemProvider: React.FC<React.PropsWithChildren> = ({ children
           ensureFile('permissions.json', []),
           ensureFile('project_locations.json', []),
           ensureFile('smart_fund.json', []),
+          ensureFile('attendance.json', []),
         ])
 
         if (cancelled) return
@@ -133,6 +136,7 @@ export const FileSystemProvider: React.FC<React.PropsWithChildren> = ({ children
           permissions,
           locations,
           smartFund,
+          attendance,
         })
       } catch {
       } finally {

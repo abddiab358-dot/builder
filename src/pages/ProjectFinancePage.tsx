@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import { useParams } from 'react-router-dom'
 import { useProjects } from '../hooks/useProjects'
 import { useInvoices } from '../hooks/useInvoices'
@@ -13,6 +14,14 @@ import { createId } from '../utils/id'
 
 export function ProjectFinancePage() {
   const { id } = useParams<{ id: string }>()
+  const { user } = useAuth()
+
+  useEffect(() => {
+    if (user?.role === 'supervisor') {
+      setActiveTab('expenses')
+    }
+  }, [user?.role])
+
   const { data: projects } = useProjects()
   const invoicesState = useInvoices(id)
   const paymentsState = usePayments(id)
@@ -24,14 +33,14 @@ export function ProjectFinancePage() {
 
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false)
   const [invoiceNumber, setInvoiceNumber] = useState('')
-  const [invoiceDate, setInvoiceDate] = useState('')
+  const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0])
   const [invoiceDueDate, setInvoiceDueDate] = useState('')
   const [invoiceAmount, setInvoiceAmount] = useState('')
   const [invoiceImageFileId, setInvoiceImageFileId] = useState('')
   const [invoiceDescription, setInvoiceDescription] = useState('')
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
-  const [paymentDate, setPaymentDate] = useState('')
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0])
   const [paymentAmount, setPaymentAmount] = useState('')
   const [paymentInvoiceId, setPaymentInvoiceId] = useState('')
   const [paymentWorkerId, setPaymentWorkerId] = useState('')
@@ -41,14 +50,15 @@ export function ProjectFinancePage() {
   const [expenseCategory, setExpenseCategory] = useState<ExpenseCategory>('materials')
   const [expenseLabel, setExpenseLabel] = useState('')
   const [expenseAmount, setExpenseAmount] = useState('')
-  const [expenseDate, setExpenseDate] = useState('')
+  const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0])
   const [expenseWorkerId, setExpenseWorkerId] = useState('')
   const [expenseDailyRate, setExpenseDailyRate] = useState('')
 
   const [workerLogModalOpen, setWorkerLogModalOpen] = useState(false)
-  const [logDate, setLogDate] = useState('')
+  const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0])
   const [logWorkerId, setLogWorkerId] = useState('')
   const [logWorkersCount, setLogWorkersCount] = useState('1')
+  const [logAmount, setLogAmount] = useState('')
 
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
@@ -200,11 +210,13 @@ export function ProjectFinancePage() {
       const selectedWorker = (workersState.data ?? []).find((w) => w.id === logWorkerId)
       if (!selectedWorker) return
 
+      const finalAmount = logAmount ? Number(logAmount) : (selectedWorker.dailyRate || 0) * workersCount
+
       await expensesState.createExpense({
         projectId: id,
         category: 'worker_daily',
         label: selectedWorker.name,
-        amount: (selectedWorker.dailyRate || 0) * workersCount,
+        amount: finalAmount,
         date: logDate,
         workerId: logWorkerId,
         dailyRate: selectedWorker.dailyRate,
@@ -214,6 +226,7 @@ export function ProjectFinancePage() {
       setLogDate('')
       setLogWorkerId('')
       setLogWorkersCount('1')
+      setLogAmount('')
       setWorkerLogModalOpen(false)
     } catch (error) {
       console.error('خطأ في إنشاء يومية العمال:', error)
@@ -308,18 +321,22 @@ export function ProjectFinancePage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500 dark:text-slate-400">إجمالي الفواتير</div>
-          <div className="text-base font-semibold text-slate-900 dark:text-slate-50">{totalInvoices.toLocaleString('ar-EG')} ليرة سورية</div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500 dark:text-slate-400">إجمالي الدفعات المستلمة</div>
-          <div className="text-base font-semibold text-emerald-700 dark:text-emerald-400">{totalPayments.toLocaleString('ar-EG')} ليرة سورية</div>
-        </div>
-        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
-          <div className="text-slate-500 dark:text-slate-400">المتبقي على العميل</div>
-          <div className="text-base font-semibold text-amber-700 dark:text-amber-400">{remaining.toLocaleString('ar-EG')} ليرة سورية</div>
-        </div>
+        {user?.role !== 'supervisor' && (
+          <>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+              <div className="text-slate-500 dark:text-slate-400">إجمالي الفواتير</div>
+              <div className="text-base font-semibold text-slate-900 dark:text-slate-50">{totalInvoices.toLocaleString('ar-EG')} ليرة سورية</div>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+              <div className="text-slate-500 dark:text-slate-400">إجمالي الدفعات المستلمة</div>
+              <div className="text-base font-semibold text-emerald-700 dark:text-emerald-400">{totalPayments.toLocaleString('ar-EG')} ليرة سورية</div>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
+              <div className="text-slate-500 dark:text-slate-400">المتبقي على العميل</div>
+              <div className="text-base font-semibold text-amber-700 dark:text-amber-400">{remaining.toLocaleString('ar-EG')} ليرة سورية</div>
+            </div>
+          </>
+        )}
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
           <div className="text-slate-500 dark:text-slate-400">إجمالي التكاليف (مصاريف + عمال)</div>
           <div className="text-base font-semibold text-slate-900 dark:text-slate-50">
@@ -330,26 +347,30 @@ export function ProjectFinancePage() {
 
       <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
         <div className="border-b border-slate-200 dark:border-slate-700 flex text-sm">
-          <button
-            type="button"
-            onClick={() => setActiveTab('invoices')}
-            className={`flex-1 px-3 py-2 text-center ${activeTab === 'invoices'
-              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}
-          >
-            الفواتير
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('payments')}
-            className={`flex-1 px-3 py-2 text-center ${activeTab === 'payments'
-              ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
-              : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-              }`}
-          >
-            الدفعات
-          </button>
+          {user?.role !== 'supervisor' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setActiveTab('invoices')}
+                className={`flex-1 px-3 py-2 text-center ${activeTab === 'invoices'
+                  ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+              >
+                الفواتير
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('payments')}
+                className={`flex-1 px-3 py-2 text-center ${activeTab === 'payments'
+                  ? 'bg-primary-50 dark:bg-primary-900 text-primary-700 dark:text-primary-300 border-b-2 border-primary-500'
+                  : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+              >
+                الدفعات
+              </button>
+            </>
+          )}
           <button
             type="button"
             onClick={() => setActiveTab('expenses')}
@@ -583,6 +604,7 @@ export function ProjectFinancePage() {
                         <th className="px-2 py-1 font-medium">عدد العمال</th>
                         <th className="px-2 py-1 font-medium">يومية الواحد</th>
                         <th className="px-2 py-1 font-medium">الإجمالي</th>
+                        <th className="px-2 py-1 font-medium">الإجراءات</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -595,6 +617,22 @@ export function ProjectFinancePage() {
                           <td className="px-2 py-1">{e.notes ? e.notes.split(': ')[1] : '-'}</td>
                           <td className="px-2 py-1">{e.dailyRate?.toLocaleString('ar-EG') || '-'} ليرة سورية</td>
                           <td className="px-2 py-1">{e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
+                          <td className="px-2 py-1 flex gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={() => openEditModal('expense', e.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800"
+                            >
+                              تعديل
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openDeleteConfirm('expense', e.id)}
+                              className="px-2 py-1 rounded-md text-xs bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900 dark:text-red-300 dark:hover:bg-red-800"
+                            >
+                              حذف
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -947,13 +985,27 @@ export function ProjectFinancePage() {
                 onChange={(e) => setLogWorkersCount(e.target.value)}
               />
             </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] text-slate-600">المبلغ الإجمالي</label>
+              <input
+                type="number"
+                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                value={logAmount}
+                onChange={(e) => setLogAmount(e.target.value)}
+                placeholder={
+                  logWorkerId && logWorkersCount
+                    ? (((workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0) * Number(logWorkersCount)).toString()
+                    : ''
+                }
+              />
+            </div>
           </div>
           {logWorkerId && (
             <div className="bg-primary-50 dark:bg-primary-900 border border-primary-200 dark:border-primary-700 rounded-md p-3 text-xs">
               <div className="text-primary-900 dark:text-primary-100">
                 <div>العامل: <span className="font-semibold">{(workersState.data ?? []).find((w) => w.id === logWorkerId)?.name}</span></div>
                 <div>يومية واحدة: <span className="font-semibold">{(workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0} ليرة سورية</span></div>
-                <div>الإجمالي: <span className="font-semibold">{((workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0) * Number(logWorkersCount || 0)} ليرة سورية</span></div>
+                <div>الإجمالي النهائي: <span className="font-semibold">{logAmount ? Number(logAmount).toLocaleString() : (((workersState.data ?? []).find((w) => w.id === logWorkerId)?.dailyRate || 0) * Number(logWorkersCount || 0)).toLocaleString()} ليرة سورية</span></div>
               </div>
             </div>
           )}

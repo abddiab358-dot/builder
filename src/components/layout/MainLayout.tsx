@@ -31,7 +31,7 @@ export function MainLayout() {
       setIsMobile(mobile)
       if (!mobile) setSidebarOpen(true)
     }
-    
+
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -109,9 +109,8 @@ export function MainLayout() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed md:relative md:translate-x-0 top-0 right-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-sm dark:shadow-dark-md z-40 transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : 'translate-x-full'
-        } md:mt-0 mt-16`}
+        className={`fixed md:relative md:translate-x-0 top-0 right-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 flex flex-col shadow-sm dark:shadow-dark-md z-40 transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'
+          } md:mt-0 mt-16`}
       >
         {/* Logo Section */}
         <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-800">
@@ -129,10 +128,9 @@ export function MainLayout() {
             onClick={() => handleNavigate('/dashboard')}
             to="/dashboard"
             className={({ isActive }) =>
-              `${navLinkBase} ${
-                isActive
-                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
-                  : 'text-slate-700 dark:text-slate-300'
+              `${navLinkBase} ${isActive
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
+                : 'text-slate-700 dark:text-slate-300'
               }`
             }
           >
@@ -148,10 +146,9 @@ export function MainLayout() {
             onClick={() => handleNavigate('/projects')}
             to="/projects"
             className={({ isActive }) =>
-              `${navLinkBase} ${
-                isActive
-                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
-                  : 'text-slate-700 dark:text-slate-300'
+              `${navLinkBase} ${isActive
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
+                : 'text-slate-700 dark:text-slate-300'
               }`
             }
           >
@@ -163,33 +160,33 @@ export function MainLayout() {
             </div>
           </NavLink>
 
-          <NavLink
-            onClick={() => handleNavigate('/clients')}
-            to="/clients"
-            className={({ isActive }) =>
-              `${navLinkBase} ${
-                isActive
+          {user?.role !== 'supervisor' && (
+            <NavLink
+              onClick={() => handleNavigate('/clients')}
+              to="/clients"
+              className={({ isActive }) =>
+                `${navLinkBase} ${isActive
                   ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
                   : 'text-slate-700 dark:text-slate-300'
-              }`
-            }
-          >
-            <div className="flex items-center justify-end gap-3">
-              <span>العملاء</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </NavLink>
+                }`
+              }
+            >
+              <div className="flex items-center justify-end gap-3">
+                <span>العملاء</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 12H9m6 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            </NavLink>
+          )}
 
           <NavLink
             onClick={() => handleNavigate('/settings')}
             to="/settings"
             className={({ isActive }) =>
-              `${navLinkBase} ${
-                isActive
-                  ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
-                  : 'text-slate-700 dark:text-slate-300'
+              `${navLinkBase} ${isActive
+                ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 shadow-sm'
+                : 'text-slate-700 dark:text-slate-300'
               }`
             }
           >
@@ -221,7 +218,7 @@ export function MainLayout() {
           <div className="flex items-center gap-4 relative">
             <div className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600"></div>
             <NotificationBell />
-            
+
             {/* User Menu */}
             <div className="relative">
               <button

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useFileSystem } from '../../context/FileSystemContext'
-import { readJSONFile, saveJSONFile, createJSONFile, openJSONFile } from '../../storage/fileSystem'
+import { readJSONFile, saveJSONFile, createJSONFile, openJSONFile, saveJSONFileHandle, readJSONFileHandle } from '../../storage/fileSystem'
 
 export function BackupManager() {
   const handles = useFileSystem()
@@ -13,19 +13,55 @@ export function BackupManager() {
     try {
       const payload: Record<string, unknown> = {}
 
-      if (handles.projects) payload.projects = (await readJSONFile(handles.projects)) ?? []
-      if (handles.tasks) payload.tasks = (await readJSONFile(handles.tasks)) ?? []
-      if (handles.clients) payload.clients = (await readJSONFile(handles.clients)) ?? []
-      if (handles.activity) payload.activity = (await readJSONFile(handles.activity)) ?? []
-      if (handles.settings) payload.settings = await readJSONFile(handles.settings)
-      if (handles.workers) payload.workers = (await readJSONFile(handles.workers)) ?? []
+      if (handles.projects) payload.projects = (await readJSONFileHandle(handles.projects)) ?? []
+      if (handles.tasks) payload.tasks = (await readJSONFileHandle(handles.tasks)) ?? []
+      if (handles.clients) payload.clients = (await readJSONFileHandle(handles.clients)) ?? []
+      if (handles.activity) payload.activity = (await readJSONFileHandle(handles.activity)) ?? []
+      if (handles.settings) payload.settings = await readJSONFileHandle(handles.settings)
+      if (handles.workers) payload.workers = (await readJSONFileHandle(handles.workers)) ?? []
       if (handles.projectFilesMeta)
-        payload.projectFilesMeta = (await readJSONFile(handles.projectFilesMeta)) ?? []
+        payload.projectFilesMeta = (await readJSONFileHandle(handles.projectFilesMeta)) ?? []
 
-      const backupHandle = await createJSONFile(`backup-${new Date().toISOString().slice(0, 10)}.json`)
-      if (!backupHandle) return
-      await saveJSONFile(backupHandle, payload)
-      setMessage('تم إنشاء ملف النسخة الاحتياطية بنجاح.')
+      const filename = `backup-${new Date().toISOString().slice(0, 10)}.json`
+
+      // المحاولة الأولى: استخدام File System Access API (للحاسوب)
+      const backupHandle = await createJSONFile(filename)
+      if (backupHandle) {
+        await saveJSONFileHandle(backupHandle, payload)
+        setMessage('تم إنشاء ملف النسخة الاحتياطية بنجاح على جهازك.')
+      } else {
+        // المحاولة الثانية: استخدام Web Share API أو التنزيل المباشر (للموبايل)
+        const jsonStr = JSON.stringify(payload, null, 2)
+        const blob = new Blob([jsonStr], { type: 'application/json' })
+        const file = new File([blob], filename, { type: 'application/json' })
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'نسخة احتياطية',
+              text: 'ملف النسخة الاحتياطية لبرنامج المقاولات'
+            })
+            setMessage('تمت مشاركة النسخة الاحتياطية بنجاح.')
+          } catch (shareError) {
+            // إذا ألغى المستخدم المشاركة أو فشلت
+            if ((shareError as Error).name !== 'AbortError') {
+              throw shareError
+            }
+          }
+        } else {
+          // المحاولة الثالثة: تنزيل مباشر
+          const url = URL.createObjectURL(blob)
+          const a = document.createElement('a')
+          a.href = url
+          a.download = filename
+          document.body.appendChild(a)
+          a.click()
+          document.body.removeChild(a)
+          URL.revokeObjectURL(url)
+          setMessage('تم تنزيل النسخة الاحتياطية.')
+        }
+      }
     } catch (e) {
       console.error(e)
       setMessage('حدث خطأ أثناء إنشاء النسخة الاحتياطية.')
@@ -40,28 +76,28 @@ export function BackupManager() {
     try {
       const backupHandle = await openJSONFile()
       if (!backupHandle) return
-      const data = (await readJSONFile<Record<string, unknown>>(backupHandle)) ?? {}
+      const data = (await readJSONFileHandle<Record<string, unknown>>(backupHandle)) ?? {}
 
       if (handles.projects && Array.isArray(data.projects)) {
-        await saveJSONFile(handles.projects, data.projects)
+        await saveJSONFileHandle(handles.projects, data.projects)
       }
       if (handles.tasks && Array.isArray(data.tasks)) {
-        await saveJSONFile(handles.tasks, data.tasks)
+        await saveJSONFileHandle(handles.tasks, data.tasks)
       }
       if (handles.clients && Array.isArray(data.clients)) {
-        await saveJSONFile(handles.clients, data.clients)
+        await saveJSONFileHandle(handles.clients, data.clients)
       }
       if (handles.activity && Array.isArray(data.activity)) {
-        await saveJSONFile(handles.activity, data.activity)
+        await saveJSONFileHandle(handles.activity, data.activity)
       }
       if (handles.settings && data.settings) {
-        await saveJSONFile(handles.settings, data.settings)
+        await saveJSONFileHandle(handles.settings, data.settings)
       }
       if (handles.workers && Array.isArray(data.workers)) {
-        await saveJSONFile(handles.workers, data.workers)
+        await saveJSONFileHandle(handles.workers, data.workers)
       }
       if (handles.projectFilesMeta && Array.isArray(data.projectFilesMeta)) {
-        await saveJSONFile(handles.projectFilesMeta, data.projectFilesMeta)
+        await saveJSONFileHandle(handles.projectFilesMeta, data.projectFilesMeta)
       }
 
       setMessage('تم استيراد النسخة الاحتياطية بنجاح.')
@@ -103,11 +139,10 @@ export function BackupManager() {
         </button>
       </div>
       {message && (
-        <div className={`text-sm p-3 rounded-lg ${
-          message.includes('نجاح')
-            ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
-            : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
-        }`}>
+        <div className={`text-sm p-3 rounded-lg ${message.includes('نجاح')
+          ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
+          : 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800'
+          }`}>
           {message}
         </div>
       )}

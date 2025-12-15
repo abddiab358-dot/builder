@@ -4,9 +4,15 @@ import { readJSONFileHandle, saveJSONFileHandle } from '../storage/fileSystem'
 // دوال مساعدة للقراءة والكتابة من localStorage كبديل
 async function readFromStorage<T>(key: string, fallback: T): Promise<T> {
   try {
-    const stored = localStorage.getItem(`collection:${key}`)
+    // محاولة قراءة الصيغة الجديدة أولاً (مطابقة لـ fileSystem.ts)
+    const stored = localStorage.getItem(`file:${key}.json`)
     if (stored) {
       return JSON.parse(stored) as T
+    }
+    // محاولة قراءة الصيغة القديمة (هجرة البيانات)
+    const oldStored = localStorage.getItem(`collection:${key}`)
+    if (oldStored) {
+      return JSON.parse(oldStored) as T
     }
   } catch { }
   return fallback
@@ -14,7 +20,10 @@ async function readFromStorage<T>(key: string, fallback: T): Promise<T> {
 
 async function saveToStorage<T>(key: string, data: T): Promise<void> {
   try {
-    localStorage.setItem(`collection:${key}`, JSON.stringify(data))
+    // الحفظ بالصيغة الموحدة
+    localStorage.setItem(`file:${key}.json`, JSON.stringify(data))
+    // تنظيف الصيغة القديمة إن وجدت
+    localStorage.removeItem(`collection:${key}`)
   } catch { }
 }
 
@@ -62,17 +71,17 @@ export function useJsonCollection<T extends { id: string }>(
       const next = updater(current)
 
       // حاول الحفظ في FileSystem أولاً
+      // حاول الحفظ في FileSystem أولاً
       if (handle) {
         try {
           await saveJSONFileHandle(handle, next)
-        } catch {
-          // fallback إلى localStorage
-          await saveToStorage(key, next)
+        } catch (e) {
+          console.warn('File system save failed, using storage only:', e)
         }
-      } else {
-        // استخدم localStorage إذا لم يكن هناك handle
-        await saveToStorage(key, next)
       }
+
+      // دائماً احفظ في localStorage كنسخة احتياطية ومزامنة
+      await saveToStorage(key, next)
 
       return next
     },
