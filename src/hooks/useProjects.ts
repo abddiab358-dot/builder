@@ -41,6 +41,7 @@ export function useProjects() {
     }
 
     await Promise.all(notifyPromises)
+    return id
   }
 
   const updateProject = async (id: string, patch: Partial<Project>) => {
@@ -51,12 +52,12 @@ export function useProjects() {
       next[idx] = { ...next[idx], ...patch }
       return next
     })
-    log({ action: 'تحديث مشروع', entity: 'project', entityId: id }).catch(() => {})
+    log({ action: 'تحديث مشروع', entity: 'project', entityId: id }).catch(() => { })
   }
 
   const deleteProject = async (id: string) => {
     await collection.save((items) => items.filter((p) => p.id !== id))
-    log({ action: 'حذف مشروع', entity: 'project', entityId: id }).catch(() => {})
+    log({ action: 'حذف مشروع', entity: 'project', entityId: id }).catch(() => { })
   }
 
   return {

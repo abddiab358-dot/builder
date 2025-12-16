@@ -12,7 +12,8 @@ import { useProjectWorks } from '../hooks/useProjectWorks'
 import { Modal } from '../components/ui/Modal'
 import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { generateDailyReportHTML, openReportInWindow, downloadReportAsHTML } from '../utils/reportGenerator'
+import { generateDailyReportHTML, openReportInWindow } from '../utils/reportGenerator'
+import { printReportToPDF } from '../utils/pdfPrinter'
 
 export function ProjectReportsPage() {
   const { id } = useParams<{ id: string }>()
@@ -34,10 +35,39 @@ export function ProjectReportsPage() {
   const [workersCount, setWorkersCount] = useState('')
   const [reportToDeleteId, setReportToDeleteId] = useState<string | null>(null)
 
+  // شعار التقرير (يمكن حفظه في localStorage أو إعداده لكل جلسة)
+  const [reportLogo, setReportLogo] = useState<string | undefined>(undefined)
+
   if (!id) return null
 
   const project = (projects ?? []).find((p) => p.id === id)
   const reports = reportsData ?? []
+
+  const handlePrintWithLogo = () => {
+    if (!project) return
+    const data = {
+      project,
+      reports: reportsData ?? [],
+      invoices: invoices ?? [],
+      payments: payments ?? [],
+      expenses: expenses ?? [],
+      workers: workers ?? [],
+      tasks: tasks ?? [],
+      projectWorks: projectWorks ?? [],
+    }
+    printReportToPDF(data, reportLogo)
+  }
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setReportLogo(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
 
   const handleCreate = async () => {
     if (!date || !progressPercent) {
@@ -79,26 +109,17 @@ export function ProjectReportsPage() {
           <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">التقارير اليومية للمشروع</h2>
           {project && <p className="text-xs text-slate-600 dark:text-slate-400">{project.title}</p>}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          <label className="cursor-pointer bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-md text-xs hover:bg-slate-50 dark:hover:bg-slate-600 flex items-center gap-1">
+            <span>{reportLogo ? 'تم اختيار الشعار' : 'شعار الشركة (للطباعة)'}</span>
+            <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+          </label>
           <button
             type="button"
-            onClick={() => {
-              if (!project) return
-              const html = generateDailyReportHTML({
-                project,
-                reports: reportsData ?? [],
-                invoices: invoices ?? [],
-                payments: payments ?? [],
-                expenses: expenses ?? [],
-                workers: workers ?? [],
-                tasks: tasks ?? [],
-                projectWorks: projectWorks ?? [],
-              })
-              openReportInWindow(html)
-            }}
+            onClick={handlePrintWithLogo}
             className="px-4 py-2 rounded-md text-xs font-medium bg-emerald-600 text-white hover:bg-emerald-700"
           >
-            📋 عرض / طباعة التقرير
+            طباعة / PDF
           </button>
           <button
             type="button"
@@ -164,6 +185,7 @@ export function ProjectReportsPage() {
                             expenses: expenses ?? [],
                             workers: workers ?? [],
                             tasks: tasks ?? [],
+                            projectWorks: projectWorks ?? [],
                           },
                           reportDate,
                           reportDate
@@ -283,6 +305,6 @@ export function ProjectReportsPage() {
           setReportToDeleteId(null)
         }}
       />
-    </div>
+    </div >
   )
 }

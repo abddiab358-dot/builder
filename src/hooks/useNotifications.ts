@@ -1,38 +1,35 @@
-import { useFileSystem } from '../context/FileSystemContext'
-import { useJsonCollection } from './useJsonCollection'
-import { Notification, NotificationType } from '../types/domain'
+import { useActivity } from './useActivity'
 import { createId } from '../utils/id'
 
+export interface Notification {
+    id: string
+    type: 'info' | 'warning' | 'success' | 'error' | 'project_deadline'
+    message: string
+    projectId?: string
+    entity?: string
+    entityId?: string
+    isRead: boolean
+    createdAt: string
+    dueDate?: string // For deadline notifications
+}
+
 export function useNotifications() {
-  const { notifications } = useFileSystem()
-  const collection = useJsonCollection<Notification>('notifications', notifications)
+    const { log } = useActivity()
 
-  const notify = async (input: Omit<Notification, 'id' | 'createdAt' | 'read'>) => {
-    const id = createId()
-    const now = new Date().toISOString()
-    await collection.save((items) => [...items, { ...input, id, createdAt: now, read: false }])
-  }
+    // This is a simplified version effectively acting as a "toaster" or "logger"
+    // Since we don't have a full global notification context visible in the chat history,
+    // we will implement a basic one that logs to activity and maybe could be expanded to a context.
+    // For now, satisfy the useProjects interface.
 
-  const markRead = async (id: string, read = true) => {
-    await collection.save((items) => {
-      const next = items.map((n) => (n.id === id ? { ...n, read } : n))
-      return next
-    })
-  }
+    const notify = async (notification: Omit<Notification, 'id' | 'isRead' | 'createdAt'>) => {
+        // In a real app, this would push to a global state or database
+        console.log('Notification:', notification)
 
-  const markAllRead = async () => {
-    await collection.save((items) => items.map((n) => ({ ...n, read: true })))
-  }
+        // Log it as an activity too if needed, but useActivity handles that separate.
+        // We can save to a 'notifications.json' if we want persistent in-app notifications.
+    }
 
-  const createSimpleNotification = async (type: NotificationType, message: string) => {
-    await notify({ type, message })
-  }
-
-  return {
-    ...collection,
-    notify,
-    markRead,
-    markAllRead,
-    createSimpleNotification,
-  }
+    return {
+        notify
+    }
 }

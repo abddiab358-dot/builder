@@ -16,8 +16,12 @@ export function ProjectNewPage() {
       <ProjectForm
         submitLabel="حفظ المشروع"
         onSubmit={async (values) => {
-          await createProject(values as any)
-          navigate('/projects')
+          const newProjectId = await createProject(values as any)
+          if (newProjectId) {
+            navigate(`/projects/${newProjectId}`)
+          } else {
+            navigate('/projects')
+          }
         }}
       />
     </div>

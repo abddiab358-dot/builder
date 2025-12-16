@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSettings } from '../hooks/useSettings'
 import { useCloudSync } from '../hooks/useCloudSync'
+import { useDailyReminders } from '../hooks/useDailyReminders'
 import { BackupManager } from '../components/backup/BackupManager'
 import { BackButton } from '../components/ui/BackButton'
 import { usePermissions } from '../hooks/usePermissions'
@@ -21,7 +22,6 @@ export function SettingsPage() {
   const {
     syncSettings,
     authenticateGoogle,
-    authenticateMicrosoft,
     syncData,
     disconnect,
     isSyncing,
@@ -29,15 +29,18 @@ export function SettingsPage() {
     lastSyncResult
   } = useCloudSync()
 
-  const [newUserName, setNewUserName] = useState('')
-  const [newUsername, setNewUsername] = useState('')
+  const { enabled: reminderEnabled, time: reminderTime, toggleReminder, updateTime, isSupported: notificationsSupported } = useDailyReminders()
+
+  const [showConfirmReset, setShowConfirmReset] = useState(false)
+  const [newUserName, setNewUserName] = useState('') // For full name
+  const [newUsername, setNewUsername] = useState('') // For login username
   const [newPassword, setNewPassword] = useState('')
   const [newUserRole, setNewUserRole] = useState<'manager' | 'staff' | 'viewer' | 'supervisor'>('manager')
   const [userToDeleteId, setUserToDeleteId] = useState<string | null>(null)
 
   const handleAddUser = async () => {
-    const name = newUserName.trim()
-    const username = newUsername.trim()
+    const name = newUserName.trim() // Use newUserName for full name
+    const username = newUsername.trim() // Use newUsername for login username
     const password = newPassword.trim()
 
     if (!name || !username || !password) {
@@ -280,6 +283,55 @@ export function SettingsPage() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Notification Section */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm dark:shadow-dark-md mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                ⏰ إعدادات التنبيهات
+              </h2>
+              {notificationsSupported ? (
+                <div className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                  <input
+                    type="checkbox"
+                    checked={reminderEnabled}
+                    onChange={(e) => toggleReminder(e.target.checked)}
+                    className="peer sr-only "
+                  />
+                  <div className={`h-6 w-11 rounded-full bg-slate-200 dark:bg-slate-700 peer-checked:bg-primary-600 after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white pointer-events-none`}></div>
+                  {/* Since styling checkboxes is tricky, let's use a simpler toggle button if this fails, but this should work with peer */}
+                </div>
+              ) : (
+                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">غير مدعوم (ويب)</span>
+              )}
+            </div>
+
+            <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
+              تفعيل تذكير يومي لتسجيل حضور العمال في المشروع.
+            </p>
+
+            {reminderEnabled && (
+              <div className="flex items-center gap-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">وقت التنبيه:</label>
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => updateTime(e.target.value)}
+                  className="px-3 py-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-50 rounded-md focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+            )}
+
+            {/* Toggle Button Replacement because the checkbox above might be hidden/hard to click */}
+            {notificationsSupported && (
+              <button
+                onClick={() => toggleReminder(!reminderEnabled)}
+                className="mt-2 text-xs text-primary-600 hover:text-primary-700 font-medium md:hidden"
+              >
+                {reminderEnabled ? 'تعطيل التنبيهات' : 'تفعيل التنبيهات'}
+              </button>
+            )}
           </div>
 
           {/* Cloud Sync Section */}
