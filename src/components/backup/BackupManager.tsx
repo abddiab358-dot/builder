@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useFileSystem } from '../../context/FileSystemContext'
 import { readJSONFile, saveJSONFile, createJSONFile, openJSONFile, saveJSONFileHandle, readJSONFileHandle } from '../../storage/fileSystem'
+import { isNative } from '../../utils/platform'
+import { pickJsonFileNative, saveFileNative } from '../../utils/nativeHelpers'
 
 export function BackupManager() {
   const handles = useFileSystem()
@@ -22,42 +24,37 @@ export function BackupManager() {
       if (handles.projectFilesMeta)
         payload.projectFilesMeta = (await readJSONFileHandle(handles.projectFilesMeta)) ?? []
 
+
       const filename = `backup-${new Date().toISOString().slice(0, 10)}.json`
 
-      // المحاولة الأولى: استخدام File System Access API (للحاسوب فقط)
-      let backupHandle: FileSystemFileHandle | null = null
-      try {
-        if (typeof window.showSaveFilePicker !== 'undefined') {
-          backupHandle = await createJSONFile(filename)
-        }
-      } catch (err) {
-        // Ignore errors from FS API and fall back
-        console.warn('FS Access API failed or cancelled', err)
-      }
-
-      if (backupHandle) {
-        await saveJSONFileHandle(backupHandle, payload)
-        setMessage('تم إنشاء ملف النسخة الاحتياطية بنجاح على جهازك.')
-      } else {
-        // المحاولة الثانية: استخدام Web Share API أو التنزيل المباشر (للموبايل)
+      if (isNative) {
+        // Android/iOS implementation
         const jsonStr = JSON.stringify(payload, null, 2)
-        const blob = new Blob([jsonStr], { type: 'application/json' })
-        const file = new File([blob], filename, { type: 'application/json' })
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'نسخة احتياطية',
-              text: 'ملف النسخة الاحتياطية لبرنامج المقاولات'
-            })
-            setMessage('تمت مشاركة النسخة الاحتياطية بنجاح.')
-          } catch (shareError) {
-            // إما أن المستخدم ألغى أو فشلت المشاركة
-            console.error('Share failed', shareError)
-          }
+        const savedUri = await saveFileNative(filename, jsonStr)
+        if (savedUri) {
+          setMessage(`تم حفظ النسخة الاحتياطية في: Documents/ContractorApp/${filename}`)
         } else {
-          // المحاولة الثالثة: تنزيل مباشر
+          setMessage('فشل حفظ النسخة الاحتياطية على الجهاز.')
+        }
+      } else {
+        // Web/Desktop implementation (Existing logic)
+        let backupHandle: FileSystemFileHandle | null = null
+        try {
+          // @ts-ignore
+          if (typeof window.showSaveFilePicker !== 'undefined') {
+            backupHandle = await createJSONFile(filename)
+          }
+        } catch (err) {
+          console.warn('FS Access API failed or cancelled', err)
+        }
+
+        if (backupHandle) {
+          await saveJSONFileHandle(backupHandle, payload)
+          setMessage('تم إنشاء ملف النسخة الاحتياطية بنجاح على جهازك.')
+        } else {
+          // Fallback download
+          const jsonStr = JSON.stringify(payload, null, 2)
+          const blob = new Blob([jsonStr], { type: 'application/json' })
           const url = URL.createObjectURL(blob)
           const a = document.createElement('a')
           a.href = url
@@ -81,9 +78,37 @@ export function BackupManager() {
     setBusy(true)
     setMessage(null)
     try {
-      const backupHandle = await openJSONFile()
-      if (!backupHandle) return
-      const data = (await readJSONFileHandle<Record<string, unknown>>(backupHandle)) ?? {}
+      let data: Record<string, any> | null = null
+
+      if (isNative) {
+        // Android/iOS import using Native File Picker
+        const picked = await pickJsonFileNative()
+        if (picked && picked.data) {
+          // data returned from plugin reads as base64 usually if configured, 
+          // or we need to check how we implemented pickJsonFileNative. 
+          // Note: readData: true in file-picker returns base64 string
+          try {
+            const jsonString = atob(picked.data)
+            data = JSON.parse(jsonString)
+          } catch (err) {
+            console.error('Failed to parse native file', err)
+            throw new Error('فشل قراءة الملف المختار')
+          }
+        } else {
+          setBusy(false)
+          return // User cancelled
+        }
+      } else {
+        // Web Import
+        const backupHandle = await openJSONFile()
+        if (!backupHandle) {
+          setBusy(false)
+          return
+        }
+        data = (await readJSONFileHandle<Record<string, unknown>>(backupHandle)) || {}
+      }
+
+      if (!data) return
 
       if (handles.projects && Array.isArray(data.projects)) {
         await saveJSONFileHandle(handles.projects, data.projects)

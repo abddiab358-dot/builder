@@ -93,6 +93,13 @@ export function ProjectDetail({ project }: Props) {
           <div className="font-semibold text-slate-900 dark:text-slate-50">الصندوق الذكي 🏦</div>
           <div className="text-xs text-slate-500 dark:text-slate-400">إدارة صندوق المشروع وتحليل المصاريف</div>
         </Link>
+        <Link
+          to={`/projects/${project.id}/works`}
+          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-sm hover:border-primary-400 dark:hover:border-primary-500 flex flex-col gap-1"
+        >
+          <div className="font-semibold text-slate-900 dark:text-slate-50">أعمال المشروع</div>
+          <div className="text-xs text-slate-500 dark:text-slate-400">قائمة الأعمال المنجزة (Checklist)</div>
+        </Link>
       </div>
     </div>
   )

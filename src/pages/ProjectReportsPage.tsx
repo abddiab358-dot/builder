@@ -8,6 +8,7 @@ import { usePayments } from '../hooks/usePayments'
 import { useExpenses } from '../hooks/useExpenses'
 import { useWorkers } from '../hooks/useWorkers'
 import { useTasks } from '../hooks/useTasks'
+import { useProjectWorks } from '../hooks/useProjectWorks'
 import { Modal } from '../components/ui/Modal'
 import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
@@ -23,6 +24,7 @@ export function ProjectReportsPage() {
   const { data: expenses } = useExpenses(id)
   const { data: workers } = useWorkers(id)
   const { data: tasks } = useTasks(id)
+  const { data: projectWorks } = useProjectWorks(id)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [date, setDate] = useState('')
@@ -90,6 +92,7 @@ export function ProjectReportsPage() {
                 expenses: expenses ?? [],
                 workers: workers ?? [],
                 tasks: tasks ?? [],
+                projectWorks: projectWorks ?? [],
               })
               openReportInWindow(html)
             }}

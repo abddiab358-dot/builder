@@ -60,6 +60,17 @@ export function ProjectFinancePage() {
   const [logWorkersCount, setLogWorkersCount] = useState('1')
   const [logAmount, setLogAmount] = useState('')
 
+  // تحديث عدد العمال تلقائياً عند فتح النافذة ليكون عدد عمال المشروع
+  useEffect(() => {
+    if (workerLogModalOpen) {
+      if (workersState.data && workersState.data.length > 0) {
+        setLogWorkersCount(workersState.data.length.toString())
+      } else {
+        setLogWorkersCount('1')
+      }
+    }
+  }, [workerLogModalOpen, workersState.data])
+
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [deleteItem, setDeleteItem] = useState<{ type: 'invoice' | 'payment' | 'expense', id: string } | null>(null)
 
@@ -74,10 +85,11 @@ export function ProjectFinancePage() {
   const payments = paymentsState.data ?? []
   const expenses = expensesState.data ?? []
   const workerLogs = expenses.filter((e) => e.category === 'worker_daily')
+  const generalExpenses = expenses.filter((e) => e.category !== 'worker_daily')
 
   const totalInvoices = invoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
   const totalPayments = payments.reduce((sum, p) => sum + (p.amount || 0), 0)
-  const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+  const totalGeneralExpenses = generalExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
   const totalLabor = workerLogs.reduce((sum, e) => sum + (e.amount || 0), 0)
   const remaining = totalInvoices - totalPayments
 
@@ -256,7 +268,7 @@ export function ProjectFinancePage() {
   }
 
   const openEditModal = (type: 'invoice' | 'payment' | 'expense', id: string) => {
-    let data = null
+    let data
     if (type === 'invoice') {
       data = invoices.find((inv) => inv.id === id)
     } else if (type === 'payment') {
@@ -340,7 +352,7 @@ export function ProjectFinancePage() {
         <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-3 text-xs flex flex-col gap-1">
           <div className="text-slate-500 dark:text-slate-400">إجمالي التكاليف (مصاريف + عمال)</div>
           <div className="text-base font-semibold text-slate-900 dark:text-slate-50">
-            {(totalExpenses + totalLabor).toLocaleString('ar-EG')} ليرة سورية
+            {(totalGeneralExpenses + totalLabor).toLocaleString('ar-EG')} ليرة سورية
           </div>
         </div>
       </div>
@@ -526,8 +538,8 @@ export function ProjectFinancePage() {
                   إضافة مصروف
                 </button>
               </div>
-              {expenses.length === 0 && <div>لا توجد مصاريف مسجلة بعد.</div>}
-              {expenses.length > 0 && (
+              {generalExpenses.length === 0 && <div>لا توجد مصاريف مسجلة بعد.</div>}
+              {generalExpenses.length > 0 && (
                 <div className="overflow-x-auto">
                   <table className="min-w-full text-xs text-right">
                     <thead className="bg-slate-50 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
@@ -540,7 +552,7 @@ export function ProjectFinancePage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {expenses.map((e) => (
+                      {generalExpenses.map((e) => (
                         <tr key={e.id} className="border-t border-slate-100 dark:border-slate-700">
                           <td className="px-2 py-1">
                             {e.date && new Date(e.date).toLocaleDateString('ar-EG')}
@@ -965,7 +977,16 @@ export function ProjectFinancePage() {
               <select
                 className="border rounded-md px-3 py-1.5 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={logWorkerId}
-                onChange={(e) => setLogWorkerId(e.target.value)}
+                onChange={(e) => {
+                  setLogWorkerId(e.target.value)
+                  // عند اختيار عامل محدد، نعيد العدد لواحد لأن المستخدم اختار شخصاً واحداً
+                  if (e.target.value) {
+                    setLogWorkersCount('1')
+                  } else {
+                    // إذا ألغى الاختيار (وهذا غير متاح تقنياً في الـ select العادي إلا إذا القيمة فارغة)، نعيد للكل
+                    setLogWorkersCount(workersState.data?.length.toString() || '1')
+                  }
+                }}
               >
                 <option value="">اختر عاملاً</option>
                 {(workersState.data ?? []).map((w) => (
@@ -980,7 +1001,8 @@ export function ProjectFinancePage() {
               <input
                 type="number"
                 min="1"
-                className="border rounded-md px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary-500"
+                readOnly
+                className="border rounded-md px-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 text-slate-500 focus:outline-none cursor-not-allowed"
                 value={logWorkersCount}
                 onChange={(e) => setLogWorkersCount(e.target.value)}
               />

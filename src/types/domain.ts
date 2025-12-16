@@ -230,3 +230,13 @@ export interface DailyChecklistItem {
   present: boolean
   notes: string
 }
+
+export interface ProjectWork {
+  id: string
+  projectId: string
+  title: string
+  isCompleted: boolean
+  completedAt?: string
+  notes?: string
+  createdAt: string
+}

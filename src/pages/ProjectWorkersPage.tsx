@@ -5,6 +5,7 @@ import { useWorkers } from '../hooks/useWorkers'
 import { WorkerForm } from '../components/workers/WorkerForm'
 import { WorkerList } from '../components/workers/WorkerList'
 import { DailyChecklistTable } from '../components/workers/DailyChecklistTable'
+import { AttendanceHistory } from '../components/workers/AttendanceHistory'
 import { BackButton } from '../components/ui/BackButton'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { Modal } from '../components/ui/Modal'
@@ -18,15 +19,18 @@ export function ProjectWorkersPage() {
   const [workerToDeleteId, setWorkerToDeleteId] = useState<string | null>(null)
   const [editingWorker, setEditingWorker] = useState<Worker | null>(null)
   const [editModalOpen, setEditModalOpen] = useState(false)
-  const [showChecklist, setShowChecklist] = useState(false)
-  const { getAttendanceByDate, saveAttendance } = useAttendance()
+
+  const [activeTab, setActiveTab] = useState<'list' | 'checklist' | 'history'>('list')
+
+  const { data: allAttendance, getAttendanceByDate, saveAttendance } = useAttendance()
   const [checklistDate, setChecklistDate] = useState(new Date().toISOString().split('T')[0])
 
+  // Filter attendance for this project's workers only (for history view)
+  const projectWorkerIds = (workers ?? []).map((w) => w.id)
+  const projectAttendance = (allAttendance ?? []).filter((item) => projectWorkerIds.includes(item.workerId))
+
   const checklistItems = getAttendanceByDate(checklistDate).filter((item) => {
-    // Filter by workers in this project if needed, or rely on workerId
-    // Since attendance is global, we should check if the worker is in this project
-    const workerIds = (workers ?? []).map((w) => w.id)
-    return workerIds.includes(item.workerId)
+    return projectWorkerIds.includes(item.workerId)
   })
 
   if (!id) return null
@@ -53,49 +57,89 @@ export function ProjectWorkersPage() {
     <div className="space-y-4 text-right">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2">
         <div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">العمال المرتبطون بالمشروع</h2>
+          <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50">العمال وتفقد الحضور</h2>
           {project && <p className="text-xs text-slate-600 dark:text-slate-400">{project.title}</p>}
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setShowChecklist(!showChecklist)}
-            className="px-3 py-1.5 rounded-md text-xs bg-emerald-600 text-white hover:bg-emerald-700"
-          >
-            {showChecklist ? 'إخفاء التفقد اليومي' : 'عرض التفقد اليومي'}
-          </button>
           <BackButton fallbackPath={`/projects/${id}`} />
         </div>
       </div>
 
-      <WorkerForm
-        projectId={id}
-        onSubmit={async (values) => {
-          await createWorker(values as any)
-        }}
-      />
+      <div className="border-b border-slate-200 dark:border-slate-700 flex text-sm">
+        <button
+          onClick={() => setActiveTab('list')}
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'list'
+            ? 'text-primary-600 border-b-2 border-primary-600 dark:text-primary-400 dark:border-primary-400'
+            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+        >
+          قائمة العمال
+        </button>
+        <button
+          onClick={() => setActiveTab('checklist')}
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'checklist'
+            ? 'text-primary-600 border-b-2 border-primary-600 dark:text-primary-400 dark:border-primary-400'
+            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+        >
+          التفقد اليومي
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 font-medium transition-colors ${activeTab === 'history'
+            ? 'text-primary-600 border-b-2 border-primary-600 dark:text-primary-400 dark:border-primary-400'
+            : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+            }`}
+        >
+          سجل التفقد (الأرشيف)
+        </button>
+      </div>
 
+      <div className="min-h-[400px]">
+        {activeTab === 'list' && (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <WorkerForm
+              projectId={id}
+              onSubmit={async (values) => {
+                await createWorker(values as any)
+              }}
+            />
+            <WorkerList
+              workers={workers ?? []}
+              onDelete={(wid) => setWorkerToDeleteId(wid)}
+              onEdit={(worker) => handleOpenEdit(worker)}
+            />
+          </div>
+        )}
 
+        {activeTab === 'checklist' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
+              <DailyChecklistTable
+                workers={workers ?? []}
+                items={checklistItems}
+                date={checklistDate}
+                onDateChange={setChecklistDate}
+                onSave={async (items) => {
+                  await saveAttendance(items)
+                }}
+              />
+            </div>
+          </div>
+        )}
 
-      {showChecklist && (
-        <div className="bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4">
-          <DailyChecklistTable
-            workers={workers ?? []}
-            items={checklistItems}
-            date={checklistDate}
-            onDateChange={setChecklistDate}
-            onSave={async (items) => {
-              await saveAttendance(items)
-            }}
-          />
-        </div>
-      )}
-
-      <WorkerList
-        workers={workers ?? []}
-        onDelete={(wid) => setWorkerToDeleteId(wid)}
-        onEdit={(worker) => handleOpenEdit(worker)}
-      />
+        {activeTab === 'history' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <AttendanceHistory
+              items={projectAttendance}
+              onSelectDate={(date) => {
+                setChecklistDate(date)
+                setActiveTab('checklist')
+              }}
+            />
+          </div>
+        )}
+      </div>
 
       <ConfirmDialog
         open={!!workerToDeleteId}

@@ -1,45 +1,46 @@
-import { Project, DailyReport, Invoice, Payment, Expense, Worker, Task } from '../types/domain'
+import { Project, DailyReport, Invoice, Payment, Expense, Worker, Task, ProjectWork } from '../types/domain'
 
 export interface ReportData {
-  project: Project
-  reports: DailyReport[]
-  invoices: Invoice[]
-  payments: Payment[]
-  expenses: Expense[]
-  workers: Worker[]
-  tasks: Task[]
+    project: Project
+    reports: DailyReport[]
+    invoices: Invoice[]
+    payments: Payment[]
+    expenses: Expense[]
+    workers: Worker[]
+    tasks: Task[]
+    projectWorks: ProjectWork[]
 }
 
 export function generateDailyReportHTML(data: ReportData, startDate?: string, endDate?: string): string {
-  const dateNow = new Date().toLocaleDateString('ar-EG')
-  const currentReport = data.reports[data.reports.length - 1]
+    const dateNow = new Date().toLocaleDateString('ar-EG')
+    const currentReport = data.reports[data.reports.length - 1]
 
-  const filteredReports = data.reports.filter((r) => {
-    if (!startDate || !endDate) return true
-    const rDate = new Date(r.date).toISOString().split('T')[0]
-    return rDate >= startDate && rDate <= endDate
-  })
+    const filteredReports = data.reports.filter((r) => {
+        if (!startDate || !endDate) return true
+        const rDate = new Date(r.date).toISOString().split('T')[0]
+        return rDate >= startDate && rDate <= endDate
+    })
 
-  const filteredInvoices = data.invoices.filter((inv) => {
-    if (!startDate || !endDate) return true
-    return inv.date >= startDate && inv.date <= endDate
-  })
+    const filteredInvoices = data.invoices.filter((inv) => {
+        if (!startDate || !endDate) return true
+        return inv.date >= startDate && inv.date <= endDate
+    })
 
-  const filteredPayments = data.payments.filter((p) => {
-    if (!startDate || !endDate) return true
-    return p.date >= startDate && p.date <= endDate
-  })
+    const filteredPayments = data.payments.filter((p) => {
+        if (!startDate || !endDate) return true
+        return p.date >= startDate && p.date <= endDate
+    })
 
-  const filteredExpenses = data.expenses.filter((e) => {
-    if (!startDate || !endDate) return true
-    return e.date >= startDate && e.date <= endDate
-  })
+    const filteredExpenses = data.expenses.filter((e) => {
+        if (!startDate || !endDate) return true
+        return e.date >= startDate && e.date <= endDate
+    })
 
-  const totalInvoices = filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
-  const totalPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
-  const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+    const totalInvoices = filteredInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0)
+    const totalPayments = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0)
+    const totalExpenses = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
 
-  const html = `
+    const html = `
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
@@ -195,8 +196,7 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
             </div>
         </div>
 
-        ${
-          filteredReports.length > 0
+        ${filteredReports.length > 0
             ? `
         <div class="section">
             <div class="section-title">التقارير اليومية</div>
@@ -211,8 +211,8 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
                 </thead>
                 <tbody>
                     ${filteredReports
-                      .map(
-                        (r) => `
+                .map(
+                    (r) => `
                     <tr>
                         <td>${new Date(r.date).toLocaleDateString('ar-EG')}</td>
                         <td>${r.progressPercent}%</td>
@@ -220,8 +220,8 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
                         <td>${r.notes || '-'}</td>
                     </tr>
                     `
-                      )
-                      .join('')}
+                )
+                .join('')}
                 </tbody>
             </table>
         </div>
@@ -259,8 +259,7 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
             </table>
         </div>
 
-        ${
-          filteredInvoices.length > 0
+        ${filteredInvoices.length > 0
             ? `
         <div class="section">
             <div class="section-title">الفواتير</div>
@@ -274,16 +273,16 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
                 </thead>
                 <tbody>
                     ${filteredInvoices
-                      .map(
-                        (inv) => `
+                .map(
+                    (inv) => `
                     <tr>
                         <td>${inv.number}</td>
                         <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
                         <td class="text-right">${inv.total.toLocaleString('ar-EG')} ليرة سورية</td>
                     </tr>
                     `
-                      )
-                      .join('')}
+                )
+                .join('')}
                 </tbody>
             </table>
         </div>
@@ -291,8 +290,38 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
             : ''
         }
 
-        ${
-          filteredExpenses.length > 0
+        ${data.projectWorks && data.projectWorks.length > 0
+            ? `
+        <div class="section">
+            <div class="section-title">أعمال المشروع (Checklist)</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>العمل</th>
+                        <th>الحالة</th>
+                        <th>تاريخ الإنجاز</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.projectWorks
+                .map(
+                    (w) => `
+                    <tr>
+                        <td>${w.title}</td>
+                        <td>${w.isCompleted ? '<span style="color: green">مكتمل</span>' : 'قيد التنفيذ'}</td>
+                        <td>${w.completedAt ? new Date(w.completedAt).toLocaleDateString('ar-EG') : '-'}</td>
+                    </tr>
+                    `
+                )
+                .join('')}
+                </tbody>
+            </table>
+        </div>
+        `
+            : ''
+        }
+
+        ${filteredExpenses.length > 0
             ? `
         <div class="section">
             <div class="section-title">المصاريف</div>
@@ -307,29 +336,28 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
                 </thead>
                 <tbody>
                     ${filteredExpenses
-                      .map(
-                        (e) => `
+                .map(
+                    (e) => `
                     <tr>
                         <td>${e.label}</td>
-                        <td>${
-                          e.category === 'materials'
+                        <td>${e.category === 'materials'
                             ? 'مواد'
                             : e.category === 'equipment'
-                              ? 'معدات'
-                              : e.category === 'fuel'
-                                ? 'محروقات'
-                                : e.category === 'food'
-                                  ? 'طعام'
-                                  : e.category === 'worker_daily'
-                                    ? 'يومية عمال'
-                                    : 'أخرى'
+                                ? 'معدات'
+                                : e.category === 'fuel'
+                                    ? 'محروقات'
+                                    : e.category === 'food'
+                                        ? 'طعام'
+                                        : e.category === 'worker_daily'
+                                            ? 'يومية عمال'
+                                            : 'أخرى'
                         }</td>
                         <td>${new Date(e.date).toLocaleDateString('ar-EG')}</td>
                         <td class="text-right">${e.amount.toLocaleString('ar-EG')} ليرة سورية</td>
                     </tr>
                     `
-                      )
-                      .join('')}
+                )
+                .join('')}
                 </tbody>
             </table>
         </div>
@@ -353,25 +381,25 @@ export function generateDailyReportHTML(data: ReportData, startDate?: string, en
 </html>
   `
 
-  return html
+    return html
 }
 
 export function downloadReportAsHTML(html: string, projectName: string) {
-  const element = document.createElement('a')
-  element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(html))
-  element.setAttribute('download', `${projectName}-تقرير-${new Date().toISOString().split('T')[0]}.html`)
-  element.style.display = 'none'
-  document.body.appendChild(element)
-  element.click()
-  document.body.removeChild(element)
+    const element = document.createElement('a')
+    element.setAttribute('href', 'data:text/html;charset=utf-8,' + encodeURIComponent(html))
+    element.setAttribute('download', `${projectName}-تقرير-${new Date().toISOString().split('T')[0]}.html`)
+    element.style.display = 'none'
+    document.body.appendChild(element)
+    element.click()
+    document.body.removeChild(element)
 }
 
 export function openReportInWindow(html: string) {
-  const printWindow = window.open('', '', 'height=600,width=900')
-  if (printWindow) {
-    printWindow.document.write(html)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
-  }
+    const printWindow = window.open('', '', 'height=600,width=900')
+    if (printWindow) {
+        printWindow.document.write(html)
+        printWindow.document.close()
+        printWindow.focus()
+        printWindow.print()
+    }
 }

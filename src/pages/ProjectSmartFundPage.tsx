@@ -4,6 +4,7 @@ import { useSmartFund } from '../hooks/useSmartFund'
 import { useExpenses } from '../hooks/useExpenses'
 import { CurrencyInput } from '../components/smart-fund/CurrencyInput'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { BackButton } from '../components/ui/BackButton'
 import { SmartFundTransaction } from '../types/domain'
 
 export function ProjectSmartFundPage() {
@@ -72,9 +73,12 @@ export function ProjectSmartFundPage() {
         <div className="space-y-6 text-right" dir="rtl">
             {/* Header & Exchange Rate */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
-                <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">الصندوق الذكي 🏦</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">إدارة صندوق المشروع وتحليل المصاريف</p>
+                <div className="flex items-center gap-4">
+                    <BackButton />
+                    <div>
+                        <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">الصندوق الذكي 🏦</h2>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">إدارة صندوق المشروع وتحليل المصاريف</p>
+                    </div>
                 </div>
                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-2 rounded-lg border border-slate-100 dark:border-slate-700">
                     <label className="text-sm font-medium text-slate-700 dark:text-slate-300">سعر الصرف اليوم ($1 = )</label>

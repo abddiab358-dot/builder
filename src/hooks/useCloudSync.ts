@@ -7,6 +7,8 @@ import {
   getSyncDirectoryHandle,
 } from '../storage/handleStore'
 import { saveJSONFileHandle, readJSONFileHandle } from '../storage/fileSystem'
+import { isNative } from '../utils/platform'
+import { saveFileNative } from '../utils/nativeHelpers'
 
 interface SyncResult {
   success: boolean
@@ -55,17 +57,21 @@ export function useCloudSync() {
   const authenticateGoogle = useCallback(async () => {
     setIsSyncing(true)
     try {
-      // التحقق من دعم File System Access API (للحاسوب)
-      // @ts-ignore
-      if (typeof window.showDirectoryPicker !== 'undefined') {
-        const dirHandle = await window.showDirectoryPicker()
-        if (!dirHandle) {
-          throw new Error('User cancelled')
-        }
-        await saveSyncDirectoryHandle(dirHandle)
+      if (isNative) {
+        // Android: We auto-enable using the Documents folder
+        // No need to pick directory, we will just use 'ContractorApp/Sync' (simulated)
       } else {
-        // للموبايل: نعتبر الاتصال ناجحاً ولكن سنستخدم المشاركة اليدوية عند المزامنة
-        console.log('Mobile device detected: Using manual share for sync')
+        // PC: Show Directory Picker
+        // @ts-ignore
+        if (typeof window.showDirectoryPicker !== 'undefined') {
+          const dirHandle = await window.showDirectoryPicker()
+          if (!dirHandle) {
+            throw new Error('User cancelled')
+          }
+          await saveSyncDirectoryHandle(dirHandle)
+        } else {
+          console.log('Browser does not support Directory Picker')
+        }
       }
 
       const newSettings: CloudSyncSettings = {
@@ -77,7 +83,7 @@ export function useCloudSync() {
       }
 
       await saveSettings(newSettings)
-      return { success: true, message: 'تم تفعيل المزامنة مع Google Drive بنجاح' }
+      return { success: true, message: isNative ? 'تم تفعيل الحفظ التلقائي في مجلد المستندات' : 'تم تفعيل المزامنة مع المجلد المحلي بنجاح' }
     } catch (error) {
       console.error('Folder selection failed:', error)
       return { success: false, message: 'فشل ربط المجلد' }
@@ -130,33 +136,53 @@ export function useCloudSync() {
         }
       }
 
-      // 2. محاولة الحفظ في المجلد المربوط (للحاسوب)
+      // 2. محاولة الحفظ
       let savedToFolder = false
-      try {
-        const syncDir = await getSyncDirectoryHandle()
-        if (syncDir) {
-          // إذا وجدنا مجلد مربوط، نحفظ الملفات فيه
+
+      if (isNative) {
+        // Native Android Logic: Save to Documents/ContractorApp/Sync
+        try {
           for (let i = 0; i < files.length; i++) {
             const filename = files[i]
             setSyncProgress(Math.round((i / files.length) * 100))
             const data = payload[filename.replace('.json', '')]
             if (data) {
-              // @ts-ignore
-              const targetFileHandle = await syncDir.getFileHandle(filename, { create: true })
-              await saveJSONFileHandle(targetFileHandle, data)
+              const jsonStr = JSON.stringify(data, null, 2)
+              await saveFileNative(`Sync/${filename}`, jsonStr)
             }
           }
           savedToFolder = true
+        } catch (e) {
+          console.error('Native sync failed', e)
         }
-      } catch (err) {
-        console.warn('Failed to save to sync folder, falling back to share', err)
+      } else {
+        // PC Logic: File System Access API
+        try {
+          const syncDir = await getSyncDirectoryHandle()
+          if (syncDir) {
+            // إذا وجدنا مجلد مربوط، نحفظ الملفات فيه
+            for (let i = 0; i < files.length; i++) {
+              const filename = files[i]
+              setSyncProgress(Math.round((i / files.length) * 100))
+              const data = payload[filename.replace('.json', '')]
+              if (data) {
+                // @ts-ignore
+                const targetFileHandle = await syncDir.getFileHandle(filename, { create: true })
+                await saveJSONFileHandle(targetFileHandle, data)
+              }
+            }
+            savedToFolder = true
+          }
+        } catch (err) {
+          console.warn('Failed to save to sync folder, falling back to share', err)
+        }
       }
 
       if (savedToFolder) {
         setSyncProgress(100)
         const result: SyncResult = {
           success: true,
-          message: `تم نسخ البيانات بنجاح إلى المجلد المحلي`,
+          message: isNative ? 'تم حفظ البيانات في مجلد ContractorApp/Sync' : 'تم نسخ البيانات بنجاح إلى المجلد المحلي',
           syncedItems: files.length,
           timestamp: new Date().toISOString(),
         }
@@ -165,7 +191,8 @@ export function useCloudSync() {
         return result
       }
 
-      // 3. (للموبايل) إذا لم يتم الحفظ في مجلد، نستخدم المشاركة
+      // 3. Fallback Share/Download (if folder save failed)
+      // ... (Keep existing download logic as last resort)
       const filename = `sync-data-${new Date().toISOString().slice(0, 10)}.json`
       const jsonStr = JSON.stringify(payload, null, 2)
       const blob = new Blob([jsonStr], { type: 'application/json' })
